@@ -1,4 +1,4 @@
-// Firebase config
+// เริ่มต้น Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyARNZnEEdWI8fkkzxK6ZsLAAMLKsMRcBao",
     authDomain: "ramspeechtest.firebaseapp.com",
@@ -7,11 +7,11 @@ const firebaseConfig = {
     messagingSenderId: "271962080875",
     appId: "1:271962080875:web:5e06af487e59a80bc3d32e",
     measurementId: "G-MX7BFVHMTE"
-  };
-  
-  // เริ่มต้นการใช้งาน Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore(); 
+};
+
+// เริ่มต้นการใช้งาน Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore(); // ใช้ firestore จาก firebase ที่โหลดมา
   
   // ฟังก์ชันเพื่อแสดง modal
   function showModal() {
