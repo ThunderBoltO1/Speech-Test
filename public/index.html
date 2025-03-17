@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Speech Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
         button { font-size: 18px; padding: 10px 20px; margin: 10px; cursor: pointer; }
@@ -12,10 +13,10 @@
 <body>
     <script src="https://code.responsivevoice.org/responsivevoice.js?key=YL7PkzaR"></script>
     <h2>กดปุ่มเพื่อให้พูด</h2>
-    <button onclick="speakText('สวัสดีครับ')">สวัสดีครับ</button>
-    <button onclick="speakText('ขอบคุณครับ')">ขอบคุณครับ</button>
-    <button onclick="speakText('ทำอะไรอยู่ครับ')">ทำอะไรอยู่ครับ</button>
-    
+    <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="speakText('สวัสดีครับ')">สวัสดีครับ</button>
+    <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="speakText('ขอบคุณครับ')">ขอบคุณครับ</button>
+    <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="speakText('ทำอะไรอยู่ครับ')">ทำอะไรอยู่ครับ</button>
+
 
     <!-- เชื่อมโยงไปที่ไฟล์ script.js -->
     <script src="js/script.js"></script>
