@@ -1,3 +1,22 @@
+// เริ่มต้น Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyARNZnEEdWI8fkkzxK6ZsLAAMLKsMRcBao",
+    authDomain: "ramspeechtest.firebaseapp.com",
+    projectId: "ramspeechtest",
+    storageBucket: "ramspeechtest.firebasestorage.app",
+    messagingSenderId: "271962080875",
+    appId: "1:271962080875:web:5e06af487e59a80bc3d32e",
+    measurementId: "G-MX7BFVHMTE"
+};
+
+// ตรวจสอบว่า Firebase ถูกเริ่มต้นแล้วหรือไม่
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
+// เข้าถึง Firestore
+const db = firebase.firestore();
+
 // ฟังก์ชันเพื่อแสดง modal
 function showModal() {
     document.getElementById('modal').classList.remove('hidden');
@@ -30,6 +49,9 @@ function addButton() {
         // ปิด modal
         closeModal();
 
+        // ล้างค่าในฟอร์ม
+        document.getElementById('buttonText').value = '';
+
         // เพิ่มปุ่มนี้ไปยัง Firestore
         addButtonToFirestore(userInput);
     } else {
@@ -47,29 +69,32 @@ function speakText(text) {
 }
 
 // ฟังก์ชันเพิ่มปุ่มไปยัง Firestore
-async function addButtonToFirestore(text) {
-    try {
-        const { db, collection, addDoc } = window.firebaseHelper;
-        const docRef = await addDoc(collection(db, "buttons"), {
-            text: text
-        });
+function addButtonToFirestore(text) {
+    db.collection("buttons").add({
+        text: text,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(function(docRef) {
         console.log("Document written with ID: ", docRef.id);
-    } catch (error) {
+    })
+    .catch(function(error) {
         console.error("Error adding document: ", error);
-    }
+    });
 }
 
 // ดึงข้อมูลปุ่มจาก Firestore และแสดงบนหน้า
-async function getButtonsFromFirestore() {
-    try {
-        const { db, collection, getDocs } = window.firebaseHelper;
-        const querySnapshot = await getDocs(collection(db, "buttons"));
-        querySnapshot.forEach((doc) => {
-            displayButton(doc.data().text);
+function getButtonsFromFirestore() {
+    db.collection("buttons")
+        .orderBy("timestamp", "desc")
+        .get()
+        .then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+                displayButton(doc.data().text);
+            });
+        })
+        .catch((error) => {
+            console.error("Error getting documents: ", error);
         });
-    } catch (error) {
-        console.error("Error getting documents: ", error);
-    }
 }
 
 // แสดงปุ่มที่ดึงมาจาก Firestore
@@ -77,7 +102,7 @@ function displayButton(text) {
     const buttonContainer = document.getElementById("button-container");
     const button = document.createElement("button");
     button.textContent = text;
-    button.classList.add("bg-blue-500", "text-white", "px-6", "py-3", "rounded", "text-sm", "mb-2");
+    button.classList.add("bg-blue-500", "text-white", "px-6", "py-3", "rounded", "text-sm", "sm:text-base", "md:text-lg");
     button.onclick = function() {
         speakText(text);
     };
@@ -85,4 +110,7 @@ function displayButton(text) {
 }
 
 // เมื่อหน้าโหลดจะดึงปุ่มจาก Firestore
-window.onload = getButtonsFromFirestore;
+window.onload = function() {
+    // ดีเลย์เล็กน้อยเพื่อให้แน่ใจว่า Firebase โหลดเสร็จแล้ว
+    setTimeout(getButtonsFromFirestore, 500);
+};
