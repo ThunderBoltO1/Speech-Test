@@ -10,7 +10,7 @@ const firebaseConfig = {
   };
   
   // เริ่มต้นการใช้งาน Firebase
-  const app = firebase.initializeApp(firebaseConfig);
+  firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore(); 
   
   // ฟังก์ชันเพื่อแสดง modal
