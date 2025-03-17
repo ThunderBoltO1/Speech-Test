@@ -1,21 +1,21 @@
 // firebase-config.js
-
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDocs } from "firebase/firestore"; 
+import { getFirestore, collection, addDoc, getDocs } from "firebase/firestore"; // นำเข้าฟังก์ชันที่ใช้
 
-// Your Firebase configuration
+// ใส่ข้อมูลคีย์ของโปรเจค Firebase ของคุณที่นี่
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID",
-    measurementId: "YOUR_MEASUREMENT_ID"
+    apiKey: "AIzaSyARNZnEEdWI8fkkzxK6ZsLAAMLKsMRcBao",
+    authDomain: "ramspeechtest.firebaseapp.com",
+    projectId: "ramspeechtest",
+    storageBucket: "ramspeechtest.firebasestorage.app",
+    messagingSenderId: "271962080875",
+    appId: "1:271962080875:web:5e06af487e59a80bc3d32e",
+    measurementId: "G-MX7BFVHMTE"
 };
 
-// Initialize Firebase
+// เริ่มต้นการใช้งาน Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// Export ฟังก์ชันที่ใช้ในส่วนอื่นๆ ของโปรเจค
 export { db, collection, addDoc, getDocs };
