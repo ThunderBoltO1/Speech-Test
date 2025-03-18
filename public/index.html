@@ -23,9 +23,18 @@
 <body>
     <div class="text-center">
         <h2 class="text-2xl sm:text-3xl md:text-4xl mb-4">กดปุ่มเพื่อพูด</h2>
-        <div id="button-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-            <!-- ปุ่มจะถูกเพิ่มที่นี่ -->
-        </div>
+        
+        <!-- Dropdown เลือกหมวดหมู่ -->
+        <select id="category-select" class="border p-2 rounded mb-4">
+            <option value="ทั่วไป">ทั่วไป</option>
+            <option value="อาหาร">อาหาร</option>
+            <option value="เครื่องดื่ม">เครื่องดื่ม</option>
+        </select>
+
+        <!-- ปุ่มจะถูกเพิ่มที่นี่ -->
+        <div id="button-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4"></div>
+
+        <!-- ปุ่มเพิ่มปุ่มใหม่ -->
         <button class="bg-purple-500 text-white px-6 py-3 rounded mb-4" onclick="showModal()" aria-label="เพิ่มปุ่มใหม่">เพิ่มปุ่ม</button>
     </div>
 

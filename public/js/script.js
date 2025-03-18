@@ -5,8 +5,8 @@ const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8";
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const API_KEY = 'AIzaSyCugN1kot7Nij2PWhKsP08I6yeHNgsYrQI';
 
-// ตัวแปร global เพื่อตรวจสอบว่าปุ่มถูกโหลดแล้วหรือไม่
-let buttonsLoaded = false;
+// ตัวแปร global เพื่อเก็บข้อมูลปุ่มตามหมวดหมู่
+let buttonsByCategory = {};
 
 // ฟังก์ชันที่ใช้ในการเริ่มต้น OAuth2 Flow
 function authenticate() {
@@ -28,8 +28,8 @@ function handleAuthResponse() {
 }
 
 // ฟังก์ชันที่ใช้ในการเพิ่มข้อมูลใน Google Sheets
-function addDataToSheet(accessToken, text) {
-    const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1:append?valueInputOption=RAW&key=${API_KEY}`;
+function addDataToSheet(accessToken, category, text) {
+    const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${category}:append?valueInputOption=RAW&key=${API_KEY}`;
 
     const data = {
         values: [
@@ -64,18 +64,17 @@ function addButton() {
         return;
     }
 
+    const category = document.getElementById('category-select').value;
     const accessToken = new URLSearchParams(window.location.hash.substring(1)).get('access_token');
     if (accessToken) {
-        addDataToSheet(accessToken, userInput)
+        addDataToSheet(accessToken, category, userInput)
             .then(() => {
-                const container = document.getElementById('button-container');
-                const newButton = document.createElement('button');
-                newButton.textContent = userInput;
-                newButton.classList.add('bg-blue-500', 'text-white', 'px-6', 'py-3', 'rounded', 'text-sm', 'sm:text-base', 'md:text-lg');
-                newButton.onclick = function() {
-                    speakText(userInput);
-                };
-                container.appendChild(newButton);
+                // เพิ่มปุ่มใหม่ในหมวดหมู่ที่เลือก
+                if (!buttonsByCategory[category]) {
+                    buttonsByCategory[category] = [];
+                }
+                buttonsByCategory[category].push(userInput);
+                loadButtons(category); // โหลดปุ่มใหม่
                 document.getElementById('buttonText').value = ''; // ล้างช่องกรอกข้อความ
                 closeModal(); // ปิด Modal
             });
@@ -86,10 +85,6 @@ function addButton() {
 
 // ฟังก์ชันสำหรับโหลดปุ่มจาก Google Sheets
 function loadButtonsFromSheet(accessToken) {
-    if (buttonsLoaded) {
-        return; // ถ้าปุ่มถูกโหลดแล้ว ไม่ต้องทำอะไรเพิ่ม
-    }
-
     const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1?key=${API_KEY}`;
 
     fetch(sheetUrl, {
@@ -105,24 +100,47 @@ function loadButtonsFromSheet(accessToken) {
         return response.json();
     })
     .then(data => {
-        const buttons = data.values || [];
-        const container = document.getElementById('button-container');
-        container.innerHTML = ''; // ล้างปุ่มเก่าทั้งหมด
-        buttons.forEach(buttonData => {
-            const newButton = document.createElement('button');
-            newButton.textContent = buttonData[0];
-            newButton.classList.add('bg-blue-500', 'text-white', 'px-6', 'py-3', 'rounded', 'text-sm', 'sm:text-base', 'md:text-lg');
-            newButton.onclick = function() {
-                speakText(buttonData[0]);
-            };
-            container.appendChild(newButton);
+        const rows = data.values || [];
+        buttonsByCategory = {};
+
+        // จัดกลุ่มข้อมูลปุ่มตามหมวดหมู่
+        rows.forEach(row => {
+            const [category, text] = row;
+            if (!buttonsByCategory[category]) {
+                buttonsByCategory[category] = [];
+            }
+            buttonsByCategory[category].push(text);
         });
-        buttonsLoaded = true; // ตั้งค่าสถานะว่าปุ่มถูกโหลดแล้ว
+
+        // โหลดปุ่มหมวดหมู่ "ทั่วไป" เป็นค่าเริ่มต้น
+        loadButtons("ทั่วไป");
+
+        // เมื่อผู้ใช้เปลี่ยนหมวดหมู่
+        document.getElementById('category-select').addEventListener('change', (event) => {
+            loadButtons(event.target.value);
+        });
     })
     .catch(error => {
         console.error("Error loading buttons from Google Sheets:", error);
         alert("ไม่สามารถโหลดข้อมูลจาก Google Sheets ได้");
     });
+}
+
+// ฟังก์ชันแสดงปุ่มตามหมวดหมู่
+function loadButtons(category) {
+    const container = document.getElementById('button-container');
+    container.innerHTML = ""; // ล้างปุ่มเก่าทั้งหมด
+
+    // แสดงปุ่มตามหมวดหมู่ที่เลือก
+    if (buttonsByCategory[category]) {
+        buttonsByCategory[category].forEach(text => {
+            const button = document.createElement('button');
+            button.textContent = text;
+            button.classList.add('bg-blue-500', 'text-white', 'px-6', 'py-3', 'rounded', 'text-sm', 'sm:text-base', 'md:text-lg');
+            button.onclick = () => speakText(text);
+            container.appendChild(button);
+        });
+    }
 }
 
 // ฟังก์ชันแสดง modal
