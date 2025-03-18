@@ -29,7 +29,9 @@ function handleAuthResponse() {
 
 // ฟังก์ชันที่ใช้ในการเพิ่มข้อมูลใน Google Sheets
 function addDataToSheet(accessToken, category, text) {
-    const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${category}:append?valueInputOption=RAW&key=${API_KEY}`;
+    // เลือก sheet ตามหมวดหมู่
+    const sheetName = category === "ทั่วไป" ? "Sheet1" : "Sheet2";
+    const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}:append?valueInputOption=RAW&key=${API_KEY}`;
 
     const data = {
         values: [
@@ -85,33 +87,31 @@ function addButton() {
 
 // ฟังก์ชันสำหรับโหลดปุ่มจาก Google Sheets
 function loadButtonsFromSheet(accessToken) {
-    const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1?key=${API_KEY}`;
+    // โหลดข้อมูลจาก Sheet1 (ทั่วไป) และ Sheet2 (อาหาร)
+    const sheet1Url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1?key=${API_KEY}`;
+    const sheet2Url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet2?key=${API_KEY}`;
 
-    fetch(sheetUrl, {
+    // โหลดข้อมูลจาก Sheet1
+    fetch(sheet1Url, {
         method: "GET",
         headers: {
             "Authorization": `Bearer ${accessToken}`
         }
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error("Failed to fetch data from Google Sheets");
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        const rows = data.values || [];
-        buttonsByCategory = {};
-
-        // จัดกลุ่มข้อมูลปุ่มตามหมวดหมู่
-        rows.forEach(row => {
-            const [category, text] = row;
-            if (!buttonsByCategory[category]) {
-                buttonsByCategory[category] = [];
+        buttonsByCategory["ทั่วไป"] = data.values?.map(row => row[0]) || [];
+        // โหลดข้อมูลจาก Sheet2
+        return fetch(sheet2Url, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${accessToken}`
             }
-            buttonsByCategory[category].push(text);
         });
-
+    })
+    .then(response => response.json())
+    .then(data => {
+        buttonsByCategory["อาหาร"] = data.values?.map(row => row[0]) || [];
         // โหลดปุ่มหมวดหมู่ "ทั่วไป" เป็นค่าเริ่มต้น
         loadButtons("ทั่วไป");
 
