@@ -5,28 +5,30 @@ const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8";
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const API_KEY = 'AIzaSyCugN1kot7Nij2PWhKsP08I6yeHNgsYrQI';
 
-// ตัวแปร global เพื่อตรวจสอบว่าปุ่มถูกโหลดแล้วหรือไม่
+
 let buttonsLoaded = false;
 
-// ฟังก์ชันที่ใช้ในการเริ่มต้น OAuth2 Flow
+
 function authenticate() {
     const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=${SCOPES}`;
     window.location.href = authUrl;
 }
 
-// เมื่อได้รับ access_token จากการยืนยันตัวตน
+
 function handleAuthResponse() {
     const params = new URLSearchParams(window.location.hash.substring(1));
     const accessToken = params.get('access_token');
     if (accessToken) {
-        // เรียกใช้ฟังก์ชันเพื่อโหลดปุ่มจาก Google Sheets
+        
+        addDataToSheet(accessToken, 'Your data to append');
+        
         loadButtonsFromSheet(accessToken);
     } else {
         console.error('Authorization failed');
     }
 }
 
-// ฟังก์ชันที่ใช้ในการเพิ่มข้อมูลใน Google Sheets
+
 function addDataToSheet(accessToken, text) {
     const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1:append?valueInputOption=RAW&key=${API_KEY}`;
 
@@ -62,15 +64,8 @@ function addButton() {
             // ถ้ามี access_token ให้เพิ่มข้อมูลลงใน Google Sheets
             addDataToSheet(accessToken, userInput)
                 .then(() => {
-                    // เพิ่มปุ่มใหม่โดยไม่ต้องโหลดปุ่มทั้งหมดใหม่
-                    const container = document.getElementById('button-container');
-                    const newButton = document.createElement('button');
-                    newButton.textContent = userInput;
-                    newButton.classList.add('bg-blue-500', 'text-white', 'px-6', 'py-3', 'rounded', 'text-sm', 'sm:text-base', 'md:text-lg');
-                    newButton.onclick = function() {
-                        speakText(userInput);
-                    };
-                    container.appendChild(newButton);
+                    // โหลดปุ่มใหม่หลังจากเพิ่มข้อมูล
+                    loadButtonsFromSheet(accessToken);
                 });
         } else {
             // ถ้าไม่มี access_token ให้เริ่มต้น OAuth2 Flow
