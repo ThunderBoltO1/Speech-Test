@@ -3,6 +3,7 @@ const CLIENT_ID = '271962080875-khc6aslq3phrnm9cqgguk37j0funtr7f.apps.googleuser
 const REDIRECT_URI = 'https://ramspeechtest.vercel.app';
 const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8"; 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+const API_KEY = 'YOUR_API_KEY';  // แทนที่ด้วย API Key ของคุณ
 
 // ฟังก์ชันที่ใช้ในการเริ่มต้น OAuth2 Flow
 function authenticate() {
@@ -26,7 +27,7 @@ function handleAuthResponse() {
 
 // ฟังก์ชันที่ใช้ในการเพิ่มข้อมูลใน Google Sheets
 function addDataToSheet(accessToken, text) {
-    const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1:append?valueInputOption=RAW`;
+    const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1:append?valueInputOption=RAW&key=${API_KEY}`;
 
     const data = {
         values: [
