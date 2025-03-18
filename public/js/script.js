@@ -75,18 +75,35 @@ function addButton() {
         // ล้างค่าในฟอร์ม
         document.getElementById('buttonText').value = '';
 
-        // เช็คว่า access_token มีอยู่ใน localStorage หรือไม่
-        const accessToken = localStorage.getItem('access_token');
-        if (accessToken) {
-            // ถ้ามี access_token ให้เพิ่มข้อมูลลงใน Google Sheets
-            addDataToSheet(accessToken, userInput);
-        } else {
-            // ถ้าไม่มี access_token ให้เริ่มต้น OAuth2 Flow
-            authenticate();
-        }
+        // เก็บปุ่มที่เพิ่มใน localStorage
+        saveButtonToStorage(userInput);
     } else {
         alert("กรุณากรอกข้อความก่อน!");
     }
+}
+
+// ฟังก์ชันสำหรับบันทึกปุ่มลงใน localStorage
+function saveButtonToStorage(text) {
+    let buttons = JSON.parse(localStorage.getItem('buttons')) || [];
+    buttons.push(text);
+    localStorage.setItem('buttons', JSON.stringify(buttons));
+}
+
+// ฟังก์ชันสำหรับโหลดปุ่มจาก localStorage
+function loadButtonsFromStorage() {
+    const buttons = JSON.parse(localStorage.getItem('buttons')) || [];
+    const container = document.getElementById('button-container');
+
+    // เพิ่มปุ่มที่เก็บใน localStorage ลงใน container
+    buttons.forEach(buttonText => {
+        const newButton = document.createElement('button');
+        newButton.textContent = buttonText;
+        newButton.classList.add('bg-blue-500', 'text-white', 'px-6', 'py-3', 'rounded', 'text-sm', 'sm:text-base', 'md:text-lg');
+        newButton.onclick = function() {
+            speakText(buttonText);
+        };
+        container.appendChild(newButton);
+    });
 }
 
 // ฟังก์ชันแสดง modal
@@ -108,8 +125,10 @@ function speakText(text) {
     }
 }
 
-// เรียกใช้ handleAuthResponse เมื่อโหลดหน้าจอ
+// เรียกใช้ loadButtonsFromStorage และ handleAuthResponse เมื่อโหลดหน้า
 window.onload = function() {
+    loadButtonsFromStorage();
+
     if (window.location.hash) {
         handleAuthResponse();
     }
