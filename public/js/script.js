@@ -1,27 +1,32 @@
-const fileId = "https://ramspeechtest.vercel.app/"; // ไฟล์ต้องเป็น Public
-const apiKey = "AIzaSyBxfc4DKunSNuWQ8KwNcID8mcADK7udhPI";
-const fileUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?key=${apiKey}&alt=media`;
+// Google Sheets API Key และ File ID
+const apiKey = "AIzaSyBxfc4DKunSNuWQ8KwNcID8mcADK7udhPI"; // API Key ของคุณ
+const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8"; // ใส่ ID ของ Google Sheets ของคุณ
 
-fetch(fileUrl)
-  .then(response => response.blob()) // ใช้ blob() ถ้าเป็นไฟล์รูป/เสียง
-  .then(blob => {
-    const url = URL.createObjectURL(blob);
-    console.log("File URL:", url);
-  })
-  .catch(error => console.error("Error:", error));
-  
-window.location.href = authUrl;
-// ฟังก์ชันเพื่อแสดง modal
-function showModal() {
-    document.getElementById('modal').classList.remove('hidden');
+// ฟังก์ชันที่ใช้ในการเพิ่มข้อมูลใน Google Sheets
+function addDataToSheet(text) {
+    const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1:append?valueInputOption=RAW&key=${apiKey}`;
+    
+    const data = {
+        values: [
+            [text]  // เพิ่มข้อมูลลงในแถวใหม่
+        ]
+    };
+
+    fetch(sheetUrl, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Data added to Google Sheets:", data);
+    })
+    .catch(error => console.error("Error adding data to Google Sheets:", error));
 }
 
-// ฟังก์ชันเพื่อปิด modal
-function closeModal() {
-    document.getElementById('modal').classList.add('hidden');
-}
-
-// ฟังก์ชันเพื่อเพิ่มปุ่มใหม่
+// ฟังก์ชันสำหรับเพิ่มปุ่มใหม่
 function addButton() {
     const userInput = document.getElementById('buttonText').value.trim();
 
@@ -46,11 +51,21 @@ function addButton() {
         // ล้างค่าในฟอร์ม
         document.getElementById('buttonText').value = '';
 
-        // เพิ่มปุ่มนี้ไปยัง Firestore
-        addButtonToFirestore(userInput);
+        // บันทึกข้อมูลลง Google Sheets
+        addDataToSheet(userInput);
     } else {
         alert("กรุณากรอกข้อความก่อน!");
     }
+}
+
+// ฟังก์ชันแสดง modal
+function showModal() {
+    document.getElementById('modal').classList.remove('hidden');
+}
+
+// ฟังก์ชันปิด modal
+function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
 }
 
 // ฟังก์ชันสำหรับพูดข้อความ
@@ -61,52 +76,3 @@ function speakText(text) {
         alert("ResponsiveVoice not loaded properly.");
     }
 }
-
-// ฟังก์ชันเพิ่มปุ่มไปยัง Firestore
-function addButtonToFirestore(text) {
-    db.collection("buttons").add({
-        text: text,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    })
-    .then(function(docRef) {
-        console.log("Document written with ID: ", docRef.id);
-    })
-    .catch(function(error) {
-        console.error("Error adding document: ", error);
-    });
-}
-
-// ดึงข้อมูลปุ่มจาก Firestore และแสดงบนหน้า
-function getButtonsFromFirestore() {
-    db.collection("buttons")
-        .orderBy("timestamp", "desc")
-        .get()
-        .then((querySnapshot) => {
-            querySnapshot.forEach((doc) => {
-                displayButton(doc.data().text);
-            });
-        })
-        .catch((error) => {
-            console.error("Error getting documents: ", error);
-        });
-}
-
-// แสดงปุ่มที่ดึงมาจาก Firestore
-function displayButton(text) {
-    const buttonContainer = document.getElementById("button-container");
-    const button = document.createElement("button");
-    button.textContent = text;
-    button.classList.add("bg-blue-500", "text-white", "px-6", "py-3", "rounded", "text-sm", "sm:text-base", "md:text-lg");
-    button.onclick = function() {
-        speakText(text);
-    };
-    buttonContainer.appendChild(button);
-}
-
-// เมื่อหน้าโหลดจะดึงปุ่มจาก Firestore
-window.onload = function() {
-    // ดีเลย์เล็กน้อยเพื่อให้แน่ใจว่า Firebase โหลดเสร็จแล้ว
-    setTimeout(getButtonsFromFirestore, 500);
-};
-
-
