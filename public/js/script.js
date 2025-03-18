@@ -4,21 +4,31 @@ const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8";
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const API_KEY = 'AIzaSyCugN1kot7Nij2PWhKsP08I6yeHNgsYrQI';
 
-let buttonsLoaded = false;
-
 function authenticate() {
-    const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=${SCOPES}`;
+    const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${SCOPES}&access_type=offline&prompt=consent`;
     window.location.href = authUrl;
 }
 
-function handleAuthResponse() {
-    const params = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = params.get('access_token');
-    if (accessToken) {
-        loadButtonsFromSheet(accessToken);
+async function handleAuthResponse() {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code) {
+        // ส่ง Authorization Code ไปยังเซิร์ฟเวอร์เพื่อขอ Access Token
+        const response = await fetch('/get-token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ code })
+        });
+        const data = await response.json();
+        if (data.access_token) {
+            loadButtonsFromSheet(data.access_token);
+        } else {
+            console.error('Failed to get access token');
+            authenticate();
+        }
     } else {
-        console.error('Authorization failed');
-        alert("การยืนยันตัวตนล้มเหลว กรุณาลองอีกครั้ง");
         authenticate();
     }
 }
@@ -51,7 +61,6 @@ function loadButtonsFromSheet(accessToken) {
             };
             container.appendChild(newButton);
         });
-        buttonsLoaded = true;
     })
     .catch(error => {
         console.error("Error loading buttons from Google Sheets:", error);
@@ -60,9 +69,5 @@ function loadButtonsFromSheet(accessToken) {
 }
 
 window.onload = function() {
-    if (window.location.hash) {
-        handleAuthResponse();
-    } else {
-        authenticate();
-    }
+    handleAuthResponse();
 };
