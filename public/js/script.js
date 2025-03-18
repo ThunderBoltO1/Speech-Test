@@ -1,11 +1,31 @@
-// Google Sheets API Key และ File ID
-const apiKey = "AIzaSyBxfc4DKunSNuWQ8KwNcID8mcADK7udhPI"; // API Key ของคุณ
+// OAuth2 Client ID และ File ID
+const CLIENT_ID = '271962080875-khc6aslq3phrnm9cqgguk37j0funtr7f.apps.googleusercontent.com';
+const REDIRECT_URI = 'https://ramspeechtest.vercel.app';
 const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8"; // ใส่ ID ของ Google Sheets ของคุณ
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+
+// ฟังก์ชันที่ใช้ในการเริ่มต้น OAuth2 Flow
+function authenticate() {
+    const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=${SCOPES}`;
+    window.location.href = authUrl;
+}
+
+// เมื่อได้รับ access_token จากการยืนยันตัวตน
+function handleAuthResponse() {
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = params.get('access_token');
+    if (accessToken) {
+        // เรียกใช้ Google Sheets API ด้วย accessToken
+        addDataToSheet(accessToken, 'Your data to append');
+    } else {
+        console.error('Authorization failed');
+    }
+}
 
 // ฟังก์ชันที่ใช้ในการเพิ่มข้อมูลใน Google Sheets
-function addDataToSheet(text) {
-    const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1:append?valueInputOption=RAW&key=${apiKey}`;
-    
+function addDataToSheet(accessToken, text) {
+    const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1:append?valueInputOption=RAW`;
+
     const data = {
         values: [
             [text]  // เพิ่มข้อมูลลงในแถวใหม่
@@ -16,6 +36,7 @@ function addDataToSheet(text) {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`
         },
         body: JSON.stringify(data)
     })
@@ -51,8 +72,8 @@ function addButton() {
         // ล้างค่าในฟอร์ม
         document.getElementById('buttonText').value = '';
 
-        // บันทึกข้อมูลลง Google Sheets
-        addDataToSheet(userInput);
+        // เรียกใช้ authenticate เมื่อผู้ใช้เพิ่มปุ่มใหม่
+        authenticate();
     } else {
         alert("กรุณากรอกข้อความก่อน!");
     }
@@ -76,3 +97,10 @@ function speakText(text) {
         alert("ResponsiveVoice not loaded properly.");
     }
 }
+
+// เรียกใช้ handleAuthResponse เมื่อโหลดหน้าจอ
+window.onload = function() {
+    if (window.location.hash) {
+        handleAuthResponse();
+    }
+};
