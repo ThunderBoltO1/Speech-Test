@@ -1,39 +1,95 @@
+// OAuth2
 const CLIENT_ID = '271962080875-khc6aslq3phrnm9cqgguk37j0funtr7f.apps.googleusercontent.com';
 const REDIRECT_URI = 'https://ramspeechtest.vercel.app';
 const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8";
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const API_KEY = 'AIzaSyCugN1kot7Nij2PWhKsP08I6yeHNgsYrQI';
 
+// ตัวแปร global เพื่อตรวจสอบว่าปุ่มถูกโหลดแล้วหรือไม่
+let buttonsLoaded = false;
+
+// ฟังก์ชันที่ใช้ในการเริ่มต้น OAuth2 Flow
 function authenticate() {
-    const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${SCOPES}&access_type=offline&prompt=consent`;
+    const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=${SCOPES}`;
     window.location.href = authUrl;
 }
 
-async function handleAuthResponse() {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    if (code) {
-        // ส่ง Authorization Code ไปยังเซิร์ฟเวอร์เพื่อขอ Access Token
-        const response = await fetch('/get-token', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ code })
-        });
-        const data = await response.json();
-        if (data.access_token) {
-            loadButtonsFromSheet(data.access_token);
-        } else {
-            console.error('Failed to get access token');
-            authenticate();
-        }
+// เมื่อได้รับ access_token จากการยืนยันตัวตน
+function handleAuthResponse() {
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = params.get('access_token');
+    if (accessToken) {
+        loadButtonsFromSheet(accessToken);
+    } else {
+        console.error('Authorization failed');
+        alert("การยืนยันตัวตนล้มเหลว กรุณาลองอีกครั้ง");
+        authenticate(); // เริ่มกระบวนการ OAuth2 ใหม่
+    }
+}
+
+// ฟังก์ชันที่ใช้ในการเพิ่มข้อมูลใน Google Sheets
+function addDataToSheet(accessToken, text) {
+    const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1:append?valueInputOption=RAW&key=${API_KEY}`;
+
+    const data = {
+        values: [
+            [text]  // เพิ่มข้อมูลลงในแถวใหม่
+        ]
+    };
+
+    return fetch(sheetUrl, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Data added to Google Sheets:", data);
+        alert("เพิ่มข้อมูลสำเร็จ!");
+    })
+    .catch(error => {
+        console.error("Error adding data to Google Sheets:", error);
+        alert("เกิดข้อผิดพลาดในการเพิ่มข้อมูล");
+    });
+}
+
+// ฟังก์ชันสำหรับเพิ่มปุ่มใหม่
+function addButton() {
+    const userInput = document.getElementById('buttonText').value.trim();
+    if (!userInput) {
+        alert("กรุณากรอกข้อความก่อน!");
+        return;
+    }
+
+    const accessToken = new URLSearchParams(window.location.hash.substring(1)).get('access_token');
+    if (accessToken) {
+        addDataToSheet(accessToken, userInput)
+            .then(() => {
+                const container = document.getElementById('button-container');
+                const newButton = document.createElement('button');
+                newButton.textContent = userInput;
+                newButton.classList.add('bg-blue-500', 'text-white', 'px-6', 'py-3', 'rounded', 'text-sm', 'sm:text-base', 'md:text-lg');
+                newButton.onclick = function() {
+                    speakText(userInput);
+                };
+                container.appendChild(newButton);
+                document.getElementById('buttonText').value = ''; // ล้างช่องกรอกข้อความ
+                closeModal(); // ปิด Modal
+            });
     } else {
         authenticate();
     }
 }
 
+// ฟังก์ชันสำหรับโหลดปุ่มจาก Google Sheets
 function loadButtonsFromSheet(accessToken) {
+    if (buttonsLoaded) {
+        return; // ถ้าปุ่มถูกโหลดแล้ว ไม่ต้องทำอะไรเพิ่ม
+    }
+
     const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1?key=${API_KEY}`;
 
     fetch(sheetUrl, {
@@ -44,14 +100,14 @@ function loadButtonsFromSheet(accessToken) {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error("Failed to fetch data from Google Sheets");
         }
         return response.json();
     })
     .then(data => {
         const buttons = data.values || [];
         const container = document.getElementById('button-container');
-        container.innerHTML = '';
+        container.innerHTML = ''; // ล้างปุ่มเก่าทั้งหมด
         buttons.forEach(buttonData => {
             const newButton = document.createElement('button');
             newButton.textContent = buttonData[0];
@@ -61,13 +117,38 @@ function loadButtonsFromSheet(accessToken) {
             };
             container.appendChild(newButton);
         });
+        buttonsLoaded = true; // ตั้งค่าสถานะว่าปุ่มถูกโหลดแล้ว
     })
     .catch(error => {
         console.error("Error loading buttons from Google Sheets:", error);
-        alert("ไม่สามารถโหลดข้อมูลจาก Google Sheets ได้: " + error.message);
+        alert("ไม่สามารถโหลดข้อมูลจาก Google Sheets ได้");
     });
 }
 
+// ฟังก์ชันแสดง modal
+function showModal() {
+    document.getElementById('modal').classList.remove('hidden');
+}
+
+// ฟังก์ชันปิด modal
+function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
+}
+
+// ฟังก์ชันสำหรับพูดข้อความ
+function speakText(text) {
+    if (typeof responsiveVoice !== "undefined" && responsiveVoice.voiceSupport()) {
+        responsiveVoice.speak(text, "Thai Male");
+    } else {
+        alert("ResponsiveVoice not loaded properly.");
+    }
+}
+
+// เรียกใช้ handleAuthResponse เมื่อโหลดหน้า
 window.onload = function() {
-    handleAuthResponse();
+    if (window.location.hash) {
+        handleAuthResponse(); // เรียก handleAuthResponse เพื่อดึง access_token และโหลดปุ่ม
+    } else {
+        authenticate();  // ถ้าไม่มี access_token ใน URL ให้เริ่ม OAuth2 Flow
+    }
 };
