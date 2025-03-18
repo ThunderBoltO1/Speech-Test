@@ -75,34 +75,54 @@ function addButton() {
         // ล้างค่าในฟอร์ม
         document.getElementById('buttonText').value = '';
 
-        // เก็บปุ่มที่เพิ่มใน localStorage
-        saveButtonToStorage(userInput);
+        // เช็คว่า access_token มีอยู่ใน localStorage หรือไม่
+        const accessToken = localStorage.getItem('access_token');
+        if (accessToken) {
+            // ถ้ามี access_token ให้เพิ่มข้อมูลลงใน Google Sheets
+            addDataToSheet(accessToken, userInput);
+        } else {
+            // ถ้าไม่มี access_token ให้เริ่มต้น OAuth2 Flow
+            authenticate();
+        }
     } else {
         alert("กรุณากรอกข้อความก่อน!");
     }
 }
 
-// ฟังก์ชันสำหรับบันทึกปุ่มลงใน localStorage
-function saveButtonToStorage(text) {
-    let buttons = JSON.parse(localStorage.getItem('buttons')) || [];
-    buttons.push(text);
-    localStorage.setItem('buttons', JSON.stringify(buttons));
-}
+// ฟังก์ชันสำหรับโหลดปุ่มจาก Google Sheets
+function loadButtonsFromSheet() {
+    const accessToken = localStorage.getItem('access_token');
+    if (!accessToken) {
+        authenticate();
+        return;
+    }
 
-// ฟังก์ชันสำหรับโหลดปุ่มจาก localStorage
-function loadButtonsFromStorage() {
-    const buttons = JSON.parse(localStorage.getItem('buttons')) || [];
-    const container = document.getElementById('button-container');
+    const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1?key=${API_KEY}`;
 
-    // เพิ่มปุ่มที่เก็บใน localStorage ลงใน container
-    buttons.forEach(buttonText => {
-        const newButton = document.createElement('button');
-        newButton.textContent = buttonText;
-        newButton.classList.add('bg-blue-500', 'text-white', 'px-6', 'py-3', 'rounded', 'text-sm', 'sm:text-base', 'md:text-lg');
-        newButton.onclick = function() {
-            speakText(buttonText);
-        };
-        container.appendChild(newButton);
+    fetch(sheetUrl, {
+        method: "GET",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const buttons = data.values || [];
+        const container = document.getElementById('button-container');
+        
+        // เพิ่มปุ่มที่ดึงมาจาก Google Sheets ลงใน container
+        buttons.forEach(buttonData => {
+            const newButton = document.createElement('button');
+            newButton.textContent = buttonData[0];  // ใช้ข้อความในแถวแรก
+            newButton.classList.add('bg-blue-500', 'text-white', 'px-6', 'py-3', 'rounded', 'text-sm', 'sm:text-base', 'md:text-lg');
+            newButton.onclick = function() {
+                speakText(buttonData[0]);
+            };
+            container.appendChild(newButton);
+        });
+    })
+    .catch(error => {
+        console.error("Error loading buttons from Google Sheets:", error);
     });
 }
 
@@ -125,9 +145,9 @@ function speakText(text) {
     }
 }
 
-// เรียกใช้ loadButtonsFromStorage และ handleAuthResponse เมื่อโหลดหน้า
+// เรียกใช้ loadButtonsFromSheet และ handleAuthResponse เมื่อโหลดหน้า
 window.onload = function() {
-    loadButtonsFromStorage();
+    loadButtonsFromSheet();
 
     if (window.location.hash) {
         handleAuthResponse();
