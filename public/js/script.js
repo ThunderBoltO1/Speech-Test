@@ -30,7 +30,7 @@ function handleAuthResponse() {
 // ฟังก์ชันที่ใช้ในการเพิ่มข้อมูลใน Google Sheets
 function addDataToSheet(accessToken, category, text) {
     // เลือก sheet ตามหมวดหมู่
-    const sheetName = category === "ทั่วไป" ? "common" : "food";
+    const sheetName = category === "ทั่วไป" ? "common" : "food"; // ใช้ชื่อ sheet ใหม่
     const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}:append?valueInputOption=RAW&key=${API_KEY}`;
 
     const data = {
@@ -50,6 +50,7 @@ function addDataToSheet(accessToken, category, text) {
     .then(response => response.json())
     .then(data => {
         console.log("Data added to Google Sheets:", data);
+        alert("เพิ่มข้อมูลสำเร็จ!");
     })
     .catch(error => {
         console.error("Error adding data to Google Sheets:", error);
@@ -65,7 +66,7 @@ function addButton() {
         return;
     }
 
-    const category = document.getElementById('category-select').value;
+    const category = document.querySelector('.nav-link.active').textContent; // หมวดหมู่ที่เลือก
     const accessToken = new URLSearchParams(window.location.hash.substring(1)).get('access_token');
     if (accessToken) {
         addDataToSheet(accessToken, category, userInput)
@@ -86,11 +87,11 @@ function addButton() {
 
 // ฟังก์ชันสำหรับโหลดปุ่มจาก Google Sheets
 function loadButtonsFromSheet(accessToken) {
-    // โหลดข้อมูลจาก Sheet1 (ทั่วไป) และ Sheet2 (อาหาร)
-    const commonUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/common?key=${API_KEY}`;
-    const foodUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/food?key=${API_KEY}`;
+    // โหลดข้อมูลจาก common (ทั่วไป) และ food (อาหาร)
+    const commonUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/common?key=${API_KEY}`; // ใช้ชื่อ sheet ใหม่
+    const foodUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/food?key=${API_KEY}`; // ใช้ชื่อ sheet ใหม่
 
-    // โหลดข้อมูลจาก Sheet1
+    // โหลดข้อมูลจาก common
     fetch(commonUrl, {
         method: "GET",
         headers: {
@@ -100,7 +101,7 @@ function loadButtonsFromSheet(accessToken) {
     .then(response => response.json())
     .then(data => {
         buttonsByCategory["ทั่วไป"] = data.values?.map(row => row[0]) || [];
-        // โหลดข้อมูลจาก Sheet2
+        // โหลดข้อมูลจาก food
         return fetch(foodUrl, {
             method: "GET",
             headers: {
@@ -113,11 +114,6 @@ function loadButtonsFromSheet(accessToken) {
         buttonsByCategory["อาหาร"] = data.values?.map(row => row[0]) || [];
         // โหลดปุ่มหมวดหมู่ "ทั่วไป" เป็นค่าเริ่มต้น
         loadButtons("ทั่วไป");
-
-        // เมื่อผู้ใช้เปลี่ยนหมวดหมู่
-        document.getElementById('category-select').addEventListener('change', (event) => {
-            loadButtons(event.target.value);
-        });
     })
     .catch(error => {
         console.error("Error loading buttons from Google Sheets:", error);
@@ -140,6 +136,12 @@ function loadButtons(category) {
             container.appendChild(button);
         });
     }
+
+    // เปลี่ยนสีพื้นหลังของ Nav Link
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    document.getElementById(`nav-${category === "ทั่วไป" ? "common" : "food"}`).classList.add('active');
 }
 
 // ฟังก์ชันแสดง modal
