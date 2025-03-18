@@ -19,9 +19,10 @@ function handleAuthResponse() {
     const params = new URLSearchParams(window.location.hash.substring(1));
     const accessToken = params.get('access_token');
     if (accessToken) {
+        console.log("Access Token:", accessToken); // Debug: ตรวจสอบ access_token
         loadButtonsFromSheet(accessToken);
     } else {
-        console.error('Authorization failed');
+        console.error('Authorization failed: No access token found');
         alert("การยืนยันตัวตนล้มเหลว กรุณาลองอีกครั้ง");
         authenticate(); // เริ่มกระบวนการ OAuth2 ใหม่
     }
@@ -97,8 +98,8 @@ function addButton() {
 // ฟังก์ชันสำหรับโหลดปุ่มจาก Google Sheets
 function loadButtonsFromSheet(accessToken) {
     // โหลดข้อมูลจาก common (ทั่วไป) และ food (อาหาร)
-    const commonUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/common?key=${API_KEY}`; // ใช้ชื่อ sheet ใหม่
-    const foodUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/food?key=${API_KEY}`; // ใช้ชื่อ sheet ใหม่
+    const commonUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/common?key=${API_KEY}`;
+    const foodUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/food?key=${API_KEY}`;
 
     // โหลดข้อมูลจาก common
     fetch(commonUrl, {
@@ -109,7 +110,7 @@ function loadButtonsFromSheet(accessToken) {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error("Network response was not ok");
+            throw new Error(`Failed to load common sheet: ${response.statusText}`);
         }
         return response.json();
     })
@@ -125,7 +126,7 @@ function loadButtonsFromSheet(accessToken) {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error("Network response was not ok");
+            throw new Error(`Failed to load food sheet: ${response.statusText}`);
         }
         return response.json();
     })
@@ -136,7 +137,7 @@ function loadButtonsFromSheet(accessToken) {
     })
     .catch(error => {
         console.error("Error loading buttons from Google Sheets:", error);
-        alert("ไม่สามารถโหลดข้อมูลจาก Google Sheets ได้");
+        alert("ไม่สามารถโหลดข้อมูลจาก Google Sheets ได้: " + error.message);
     });
 }
 
