@@ -47,7 +47,12 @@ function addDataToSheet(accessToken, category, text) {
         },
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Network response was not ok");
+        }
+        return response.json();
+    })
     .then(data => {
         console.log("Data added to Google Sheets:", data);
         alert("เพิ่มข้อมูลสำเร็จ!");
@@ -79,6 +84,10 @@ function addButton() {
                 loadButtons(category); // โหลดปุ่มใหม่
                 document.getElementById('buttonText').value = ''; // ล้างช่องกรอกข้อความ
                 closeModal(); // ปิด Modal
+            })
+            .catch(error => {
+                console.error("Error adding button:", error);
+                alert("เกิดข้อผิดพลาดในการเพิ่มปุ่ม");
             });
     } else {
         authenticate();
@@ -98,7 +107,12 @@ function loadButtonsFromSheet(accessToken) {
             "Authorization": `Bearer ${accessToken}`
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Network response was not ok");
+        }
+        return response.json();
+    })
     .then(data => {
         buttonsByCategory["ทั่วไป"] = data.values?.map(row => row[0]) || [];
         // โหลดข้อมูลจาก food
@@ -109,7 +123,12 @@ function loadButtonsFromSheet(accessToken) {
             }
         });
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Network response was not ok");
+        }
+        return response.json();
+    })
     .then(data => {
         buttonsByCategory["อาหาร"] = data.values?.map(row => row[0]) || [];
         // โหลดปุ่มหมวดหมู่ "ทั่วไป" เป็นค่าเริ่มต้น
