@@ -1,7 +1,7 @@
-// OAuth2 Client ID และ File ID
+// OAuth2
 const CLIENT_ID = '271962080875-khc6aslq3phrnm9cqgguk37j0funtr7f.apps.googleusercontent.com';
 const REDIRECT_URI = 'https://ramspeechtest.vercel.app';
-const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8"; // ใส่ ID ของ Google Sheets ของคุณ
+const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8"; 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 
 // ฟังก์ชันที่ใช้ในการเริ่มต้น OAuth2 Flow
@@ -15,6 +15,8 @@ function handleAuthResponse() {
     const params = new URLSearchParams(window.location.hash.substring(1));
     const accessToken = params.get('access_token');
     if (accessToken) {
+        // เก็บ access_token ใน localStorage
+        localStorage.setItem('access_token', accessToken);
         // เรียกใช้ Google Sheets API ด้วย accessToken
         addDataToSheet(accessToken, 'Your data to append');
     } else {
@@ -72,8 +74,15 @@ function addButton() {
         // ล้างค่าในฟอร์ม
         document.getElementById('buttonText').value = '';
 
-        // เรียกใช้ authenticate เมื่อผู้ใช้เพิ่มปุ่มใหม่
-        authenticate();
+        // เช็คว่า access_token มีอยู่ใน localStorage หรือไม่
+        const accessToken = localStorage.getItem('access_token');
+        if (accessToken) {
+            // ถ้ามี access_token ให้เพิ่มข้อมูลลงใน Google Sheets
+            addDataToSheet(accessToken, userInput);
+        } else {
+            // ถ้าไม่มี access_token ให้เริ่มต้น OAuth2 Flow
+            authenticate();
+        }
     } else {
         alert("กรุณากรอกข้อความก่อน!");
     }
