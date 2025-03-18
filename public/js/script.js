@@ -50,7 +50,6 @@ function addDataToSheet(accessToken, category, text) {
     .then(response => response.json())
     .then(data => {
         console.log("Data added to Google Sheets:", data);
-        alert("เพิ่มข้อมูลสำเร็จ!");
     })
     .catch(error => {
         console.error("Error adding data to Google Sheets:", error);
