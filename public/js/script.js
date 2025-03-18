@@ -150,7 +150,11 @@ function loadButtons(category) {
         buttonsByCategory[category].forEach(text => {
             const button = document.createElement('button');
             button.textContent = text;
-            button.classList.add('bg-blue-500', 'text-white', 'px-6', 'py-3', 'rounded', 'text-sm', 'sm:text-base', 'md:text-lg');
+            button.classList.add(
+                'bg-blue-500', 'text-white', 'px-6', 'py-3', 'rounded', 
+                'text-sm', 'sm:text-base', 'md:text-lg', 'hover:bg-blue-600', 
+                'transition-all', 'duration-300', 'focus:outline-none'
+            );
             button.onclick = () => speakText(text);
             container.appendChild(button);
         });
@@ -158,9 +162,12 @@ function loadButtons(category) {
 
     // เปลี่ยนสีพื้นหลังของ Nav Link
     document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
+        link.classList.remove('active', 'bg-blue-500', 'text-white');
+        link.classList.add('text-gray-700', 'hover:bg-blue-500', 'hover:text-white');
     });
-    document.getElementById(`nav-${category === "ทั่วไป" ? "common" : "food"}`).classList.add('active');
+    const activeNav = document.getElementById(`nav-${category === "ทั่วไป" ? "common" : "food"}`);
+    activeNav.classList.add('active', 'bg-blue-500', 'text-white');
+    activeNav.classList.remove('text-gray-700', 'hover:bg-blue-500', 'hover:text-white');
 }
 
 // ฟังก์ชันแสดง modal
