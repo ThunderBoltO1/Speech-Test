@@ -3,7 +3,7 @@ const CLIENT_ID = '271962080875-khc6aslq3phrnm9cqgguk37j0funtr7f.apps.googleuser
 const REDIRECT_URI = 'https://ramspeechtest.vercel.app';
 const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8"; 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
-const API_KEY = 'YOUR_API_KEY';  // แทนที่ด้วย API Key ของคุณ
+const API_KEY = 'AIzaSyBxfc4DKunSNuWQ8KwNcID8mcADK7udhPI';  // แทนที่ด้วย API Key ของคุณ
 
 // ฟังก์ชันที่ใช้ในการเริ่มต้น OAuth2 Flow
 function authenticate() {
