@@ -88,8 +88,8 @@ function addButton() {
 // ฟังก์ชันสำหรับโหลดปุ่มจาก Google Sheets
 function loadButtonsFromSheet(accessToken) {
     // โหลดข้อมูลจาก Sheet1 (ทั่วไป) และ Sheet2 (อาหาร)
-    const sheet1Url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1?key=${API_KEY}`;
-    const sheet2Url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet2?key=${API_KEY}`;
+    const sheet1Url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/common?key=${API_KEY}`;
+    const sheet2Url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/food?key=${API_KEY}`;
 
     // โหลดข้อมูลจาก Sheet1
     fetch(sheet1Url, {
