@@ -1,4 +1,4 @@
-/ OAuth2
+// OAuth2
 const CLIENT_ID = '271962080875-khc6aslq3phrnm9cqgguk37j0funtr7f.apps.googleusercontent.com';
 const REDIRECT_URI = 'https://ramspeechtest.vercel.app';
 const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8"; 
