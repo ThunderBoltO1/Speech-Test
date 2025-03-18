@@ -1,22 +1,16 @@
-// เริ่มต้น Firebase
-const firebaseConfig = {
-    apiKey: "AIzaSyARNZnEEdWI8fkkzxK6ZsLAAMLKsMRcBao",
-    authDomain: "ramspeechtest.firebaseapp.com",
-    projectId: "ramspeechtest",
-    storageBucket: "ramspeechtest.firebasestorage.app",
-    messagingSenderId: "271962080875",
-    appId: "1:271962080875:web:5e06af487e59a80bc3d32e",
-    measurementId: "G-MX7BFVHMTE"
-};
+const fileId = "https://ramspeechtest.vercel.app/"; // ไฟล์ต้องเป็น Public
+const apiKey = "AIzaSyBxfc4DKunSNuWQ8KwNcID8mcADK7udhPI";
+const fileUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?key=${apiKey}&alt=media`;
 
-// ตรวจสอบว่า Firebase ถูกเริ่มต้นแล้วหรือไม่
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
-
-// เข้าถึง Firestore
-const db = firebase.firestore();
-
+fetch(fileUrl)
+  .then(response => response.blob()) // ใช้ blob() ถ้าเป็นไฟล์รูป/เสียง
+  .then(blob => {
+    const url = URL.createObjectURL(blob);
+    console.log("File URL:", url);
+  })
+  .catch(error => console.error("Error:", error));
+  
+window.location.href = authUrl;
 // ฟังก์ชันเพื่อแสดง modal
 function showModal() {
     document.getElementById('modal').classList.remove('hidden');
@@ -114,3 +108,5 @@ window.onload = function() {
     // ดีเลย์เล็กน้อยเพื่อให้แน่ใจว่า Firebase โหลดเสร็จแล้ว
     setTimeout(getButtonsFromFirestore, 500);
 };
+
+
