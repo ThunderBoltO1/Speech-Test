@@ -19,8 +19,6 @@ function handleAuthResponse() {
     const params = new URLSearchParams(window.location.hash.substring(1));
     const accessToken = params.get('access_token');
     if (accessToken) {
-        // เรียกใช้ Google Sheets API ด้วย accessToken
-        addDataToSheet(accessToken, 'Your data to append');
         // เรียกใช้ฟังก์ชันเพื่อโหลดปุ่มจาก Google Sheets
         loadButtonsFromSheet(accessToken);
     } else {
@@ -64,8 +62,15 @@ function addButton() {
             // ถ้ามี access_token ให้เพิ่มข้อมูลลงใน Google Sheets
             addDataToSheet(accessToken, userInput)
                 .then(() => {
-                    // โหลดปุ่มใหม่หลังจากเพิ่มข้อมูล
-                    loadButtonsFromSheet(accessToken);
+                    // เพิ่มปุ่มใหม่โดยไม่ต้องโหลดปุ่มทั้งหมดใหม่
+                    const container = document.getElementById('button-container');
+                    const newButton = document.createElement('button');
+                    newButton.textContent = userInput;
+                    newButton.classList.add('bg-blue-500', 'text-white', 'px-6', 'py-3', 'rounded', 'text-sm', 'sm:text-base', 'md:text-lg');
+                    newButton.onclick = function() {
+                        speakText(userInput);
+                    };
+                    container.appendChild(newButton);
                 });
         } else {
             // ถ้าไม่มี access_token ให้เริ่มต้น OAuth2 Flow
