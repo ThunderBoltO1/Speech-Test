@@ -19,11 +19,10 @@ function handleAuthResponse() {
     const params = new URLSearchParams(window.location.hash.substring(1));
     const accessToken = params.get('access_token');
     if (accessToken) {
+        // เรียกใช้ฟังก์ชันเพื่อโหลดปุ่มจาก Google Sheets
         loadButtonsFromSheet(accessToken);
     } else {
         console.error('Authorization failed');
-        alert("การยืนยันตัวตนล้มเหลว กรุณาลองอีกครั้ง");
-        authenticate(); // เริ่มกระบวนการ OAuth2 ใหม่
     }
 }
 
@@ -48,39 +47,41 @@ function addDataToSheet(accessToken, text) {
     .then(response => response.json())
     .then(data => {
         console.log("Data added to Google Sheets:", data);
-        alert("เพิ่มข้อมูลสำเร็จ!");
     })
-    .catch(error => {
-        console.error("Error adding data to Google Sheets:", error);
-        alert("เกิดข้อผิดพลาดในการเพิ่มข้อมูล");
-    });
+    .catch(error => console.error("Error adding data to Google Sheets:", error));
 }
 
 // ฟังก์ชันสำหรับเพิ่มปุ่มใหม่
 function addButton() {
     const userInput = document.getElementById('buttonText').value.trim();
-    if (!userInput) {
-        alert("กรุณากรอกข้อความก่อน!");
-        return;
-    }
 
-    const accessToken = new URLSearchParams(window.location.hash.substring(1)).get('access_token');
-    if (accessToken) {
-        addDataToSheet(accessToken, userInput)
-            .then(() => {
-                const container = document.getElementById('button-container');
-                const newButton = document.createElement('button');
-                newButton.textContent = userInput;
-                newButton.classList.add('bg-blue-500', 'text-white', 'px-6', 'py-3', 'rounded', 'text-sm', 'sm:text-base', 'md:text-lg');
-                newButton.onclick = function() {
-                    speakText(userInput);
-                };
-                container.appendChild(newButton);
-                document.getElementById('buttonText').value = ''; // ล้างช่องกรอกข้อความ
-                closeModal(); // ปิด Modal
-            });
+    if (userInput) {
+        // เรียกใช้ฟังก์ชันที่ใช้ในการดึง access_token
+        const accessToken = new URLSearchParams(window.location.hash.substring(1)).get('access_token');
+        if (accessToken) {
+            // ถ้ามี access_token ให้เพิ่มข้อมูลลงใน Google Sheets
+            addDataToSheet(accessToken, userInput)
+                .then(() => {
+                    // เพิ่มปุ่มใหม่โดยไม่ต้องโหลดปุ่มทั้งหมดใหม่
+                    const container = document.getElementById('button-container');
+                    const newButton = document.createElement('button');
+                    newButton.textContent = userInput;
+                    newButton.classList.add('bg-blue-500', 'text-white', 'px-6', 'py-3', 'rounded', 'text-sm', 'sm:text-base', 'md:text-lg');
+                    newButton.onclick = function() {
+                        speakText(userInput);
+                    };
+                    container.appendChild(newButton);
+                });
+        } else {
+            // ถ้าไม่มี access_token ให้เริ่มต้น OAuth2 Flow
+            authenticate();
+        }
+
+        // ปิด modal และล้างค่าในฟอร์ม
+        closeModal();
+        document.getElementById('buttonText').value = '';
     } else {
-        authenticate();
+        alert("กรุณากรอกข้อความก่อน!");
     }
 }
 
@@ -98,30 +99,26 @@ function loadButtonsFromSheet(accessToken) {
             "Authorization": `Bearer ${accessToken}`
         }
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error("Failed to fetch data from Google Sheets");
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
         const buttons = data.values || [];
         const container = document.getElementById('button-container');
-        container.innerHTML = ''; // ล้างปุ่มเก่าทั้งหมด
+        
+        // เพิ่มปุ่มที่ดึงมาจาก Google Sheets ลงใน container
         buttons.forEach(buttonData => {
             const newButton = document.createElement('button');
-            newButton.textContent = buttonData[0];
+            newButton.textContent = buttonData[0];  
             newButton.classList.add('bg-blue-500', 'text-white', 'px-6', 'py-3', 'rounded', 'text-sm', 'sm:text-base', 'md:text-lg');
             newButton.onclick = function() {
                 speakText(buttonData[0]);
             };
             container.appendChild(newButton);
         });
+
         buttonsLoaded = true; // ตั้งค่าสถานะว่าปุ่มถูกโหลดแล้ว
     })
     .catch(error => {
         console.error("Error loading buttons from Google Sheets:", error);
-        alert("ไม่สามารถโหลดข้อมูลจาก Google Sheets ได้");
     });
 }
 
@@ -137,7 +134,7 @@ function closeModal() {
 
 // ฟังก์ชันสำหรับพูดข้อความ
 function speakText(text) {
-    if (typeof responsiveVoice !== "undefined" && responsiveVoice.voiceSupport()) {
+    if (typeof responsiveVoice !== "undefined") {
         responsiveVoice.speak(text, "Thai Male");
     } else {
         alert("ResponsiveVoice not loaded properly.");
