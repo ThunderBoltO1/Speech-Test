@@ -30,7 +30,7 @@ function handleAuthResponse() {
 // ฟังก์ชันที่ใช้ในการเพิ่มข้อมูลใน Google Sheets
 function addDataToSheet(accessToken, category, text) {
     // เลือก sheet ตามหมวดหมู่
-    const sheetName = category === "ทั่วไป" ? "Sheet1" : "Sheet2";
+    const sheetName = category === "ทั่วไป" ? "common" : "food";
     const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}:append?valueInputOption=RAW&key=${API_KEY}`;
 
     const data = {
@@ -88,11 +88,11 @@ function addButton() {
 // ฟังก์ชันสำหรับโหลดปุ่มจาก Google Sheets
 function loadButtonsFromSheet(accessToken) {
     // โหลดข้อมูลจาก Sheet1 (ทั่วไป) และ Sheet2 (อาหาร)
-    const sheet1Url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/common?key=${API_KEY}`;
-    const sheet2Url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/food?key=${API_KEY}`;
+    const commonUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/common?key=${API_KEY}`;
+    const foodUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/food?key=${API_KEY}`;
 
     // โหลดข้อมูลจาก Sheet1
-    fetch(sheet1Url, {
+    fetch(commonUrl, {
         method: "GET",
         headers: {
             "Authorization": `Bearer ${accessToken}`
@@ -102,7 +102,7 @@ function loadButtonsFromSheet(accessToken) {
     .then(data => {
         buttonsByCategory["ทั่วไป"] = data.values?.map(row => row[0]) || [];
         // โหลดข้อมูลจาก Sheet2
-        return fetch(sheet2Url, {
+        return fetch(foodUrl, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${accessToken}`
