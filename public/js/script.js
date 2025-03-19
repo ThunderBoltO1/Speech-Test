@@ -74,12 +74,12 @@ function addButton() {
     }
 
     const activeNavLink = document.querySelector('.nav-link.active');
-if (!activeNavLink) {
-    console.warn("No active nav link found, setting default category to 'ทั่วไป'");
-    alert("ไม่พบหมวดหมู่ที่เลือก กำหนดเป็น 'ทั่วไป'");
-    loadButtons("ทั่วไป"); // โหลดปุ่ม "ทั่วไป" เป็นค่าเริ่มต้น
-    return;
-}
+    if (!activeNavLink) {
+        console.warn("No active nav link found, setting default category to 'ทั่วไป'");
+        alert("ไม่พบหมวดหมู่ที่เลือก กำหนดเป็น 'ทั่วไป'");
+        loadButtons("ทั่วไป"); // โหลดปุ่ม "ทั่วไป" เป็นค่าเริ่มต้น
+        return;
+    }
 
     const category = activeNavLink.textContent; // หมวดหมู่ที่เลือก
     const accessToken = new URLSearchParams(window.location.hash.substring(1)).get('access_token');
@@ -103,13 +103,10 @@ if (!activeNavLink) {
         console.error("Access token not found");
         authenticate(); // เริ่มกระบวนการ OAuth2 ใหม่
     }
-}       {
-        authenticate();
-    }
+}
 
 // ฟังก์ชันสำหรับโหลดปุ่มจาก Google Sheets
 function loadButtonsFromSheet(accessToken) {
-    // โหลดข้อมูลจาก common (ทั่วไป) และ need (ความต้องการ)
     const commonUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/common?key=${API_KEY}`;
     const needUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/need?key=${API_KEY}`;
 
@@ -144,8 +141,8 @@ function loadButtonsFromSheet(accessToken) {
     })
     .then(data => {
         buttonsByCategory["ความต้องการ"] = data.values?.map(row => row[0]) || [];
-        // โหลดปุ่มหมวดหมู่ "ทั่วไป" เป็นค่าเริ่มต้น
-        loadButtons("ทั่วไป");
+        // เรียก loadButtons หลังจากโหลดข้อมูลเสร็จสิ้น
+        loadButtons("ทั่วไป"); // แสดงหมวดหมู่ "ทั่วไป" เป็นค่าเริ่มต้น
     })
     .catch(error => {
         console.error("Error loading buttons from Google Sheets:", error);
@@ -158,8 +155,8 @@ function loadButtons(category) {
     const container = document.getElementById('button-container');
     container.innerHTML = ""; // ล้างปุ่มเก่าทั้งหมด
 
-    // แสดงปุ่มตามหมวดหมู่ที่เลือก
-    if (buttonsByCategory[category]) {
+    // ตรวจสอบว่า buttonsByCategory[category] ถูกกำหนดแล้วหรือไม่
+    if (buttonsByCategory[category] && buttonsByCategory[category].length > 0) {
         buttonsByCategory[category].forEach(text => {
             const button = document.createElement('button');
             button.textContent = text;
@@ -171,6 +168,8 @@ function loadButtons(category) {
             button.onclick = () => speakText(text);
             container.appendChild(button);
         });
+    } else {
+        container.innerHTML = "<p>ไม่มีปุ่มในหมวดหมู่นี้</p>"; // ถ้าไม่มีปุ่มแสดงข้อความแจ้งเตือน
     }
 
     // เปลี่ยนสีพื้นหลังของ Nav Link
