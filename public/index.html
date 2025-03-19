@@ -28,16 +28,20 @@
             <button 
                 id="nav-common" 
                 class="nav-link active px-4 py-2 rounded-lg transition-all duration-300 hover:bg-blue-500 hover:text-white font-medium text-gray-700" 
-                onclick="loadButtons('ทั่วไป')"
-            >
+                onclick="loadButtons('ทั่วไป')">
                 ทั่วไป
             </button>
             <button 
-                id="nav-food" 
+                id="nav-need" 
                 class="nav-link px-4 py-2 rounded-lg transition-all duration-300 hover:bg-blue-500 hover:text-white font-medium text-gray-700" 
-                onclick="loadButtons('อาหาร')"
-            >
-                อาหาร
+                onclick="loadButtons('ความต้องการ')">
+                ความต้องการ
+            </button>
+            <button 
+                id="nav-fav" 
+                class="nav-link px-4 py-2 rounded-lg transition-all duration-300 hover:bg-blue-500 hover:text-white font-medium text-gray-700" 
+                onclick="loadButtons('คลัง')">
+                คลัง
             </button>
         </nav>
     </div>
@@ -49,7 +53,7 @@
     </div>
 
     <!-- ปุ่มเพิ่มปุ่มใหม่ -->
-    <button class="fixed bottom-4 right-4 bg-purple-500 text-white px-6 py-3 rounded hover:bg-purple-600 transition-all duration-300" onclick="showModal()" aria-label="เพิ่มปุ่มใหม่">เพิ่มปุ่ม</button>
+    <button class="fixed bottom-4 right-4 bg-purple-500 text-white px-6 py-3 rounded hover:bg-purple-600 transition-all duration-300" onclick="showModal()" aria-label="เพิ่มปุ่มใหม่">เพิ่มคำ</button>
 
     <!-- Modal เพิ่มปุ่มใหม่ -->
     <div id="modal" class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center hidden">

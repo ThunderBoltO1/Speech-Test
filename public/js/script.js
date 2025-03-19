@@ -99,7 +99,7 @@ function addButton() {
 function loadButtonsFromSheet(accessToken) {
     // โหลดข้อมูลจาก common (ทั่วไป) และ food (อาหาร)
     const commonUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/common?key=${API_KEY}`;
-    const foodUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/food?key=${API_KEY}`;
+    const needurl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/need?key=${API_KEY}`;
 
     // โหลดข้อมูลจาก common
     fetch(commonUrl, {
@@ -116,8 +116,8 @@ function loadButtonsFromSheet(accessToken) {
     })
     .then(data => {
         buttonsByCategory["ทั่วไป"] = data.values?.map(row => row[0]) || [];
-        // โหลดข้อมูลจาก food
-        return fetch(foodUrl, {
+        // โหลดข้อมูลจาก need
+        return fetch(needurl, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${accessToken}`
@@ -131,7 +131,7 @@ function loadButtonsFromSheet(accessToken) {
         return response.json();
     })
     .then(data => {
-        buttonsByCategory["อาหาร"] = data.values?.map(row => row[0]) || [];
+        buttonsByCategory["ความต้องการ"] = data.values?.map(row => row[0]) || [];
         // โหลดปุ่มหมวดหมู่ "ทั่วไป" เป็นค่าเริ่มต้น
         loadButtons("ทั่วไป");
     })
