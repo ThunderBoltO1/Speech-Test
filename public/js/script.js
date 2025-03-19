@@ -1,9 +1,10 @@
 // OAuth2
 const CLIENT_ID = '271962080875-khc6aslq3phrnm9cqgguk37j0funtr7f.apps.googleusercontent.com';
-const REDIRECT_URI = 'https://ramspeechtest.vercel.app';
+const REDIRECT_URI = process.env.REDIRECT_URI || 'https://ramspeechtest.vercel.app';
 const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8";
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const API_KEY = 'AIzaSyCugN1kot7Nij2PWhKsP08I6yeHNgsYrQI';
+require('dotenv').config();
 
 // ตัวแปร global เพื่อเก็บข้อมูลปุ่มตามหมวดหมู่
 let buttonsByCategory = {};
@@ -31,7 +32,7 @@ function handleAuthResponse() {
 // ฟังก์ชันที่ใช้ในการเพิ่มข้อมูลใน Google Sheets
 function addDataToSheet(accessToken, category, text) {
     // เลือก sheet ตามหมวดหมู่
-    const sheetName = category === "ทั่วไป" ? "common" : "food"; // ใช้ชื่อ sheet ใหม่
+    const sheetName = category === "ทั่วไป" ? "common" : "need";
     const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}:append?valueInputOption=RAW&key=${API_KEY}`;
 
     const data = {
@@ -56,7 +57,7 @@ function addDataToSheet(accessToken, category, text) {
     })
     .then(data => {
         console.log("Data added to Google Sheets:", data);
-        alert("เพิ่มข้อมูลสำเร็จ!");
+        
     })
     .catch(error => {
         console.error("Error adding data to Google Sheets:", error);
@@ -72,7 +73,15 @@ function addButton() {
         return;
     }
 
-    const category = document.querySelector('.nav-link.active').textContent; // หมวดหมู่ที่เลือก
+    const activeNavLink = document.querySelector('.nav-link.active');
+if (!activeNavLink) {
+    console.warn("No active nav link found, setting default category to 'ทั่วไป'");
+    alert("ไม่พบหมวดหมู่ที่เลือก กำหนดเป็น 'ทั่วไป'");
+    loadButtons("ทั่วไป"); // โหลดปุ่ม "ทั่วไป" เป็นค่าเริ่มต้น
+    return;
+}
+
+    const category = activeNavLink.textContent; // หมวดหมู่ที่เลือก
     const accessToken = new URLSearchParams(window.location.hash.substring(1)).get('access_token');
     if (accessToken) {
         addDataToSheet(accessToken, category, userInput)
@@ -91,15 +100,18 @@ function addButton() {
                 alert("เกิดข้อผิดพลาดในการเพิ่มปุ่ม");
             });
     } else {
+        console.error("Access token not found");
+        authenticate(); // เริ่มกระบวนการ OAuth2 ใหม่
+    }
+}       {
         authenticate();
     }
-}
 
 // ฟังก์ชันสำหรับโหลดปุ่มจาก Google Sheets
 function loadButtonsFromSheet(accessToken) {
-    // โหลดข้อมูลจาก common (ทั่วไป) และ food (อาหาร)
+    // โหลดข้อมูลจาก common (ทั่วไป) และ need (ความต้องการ)
     const commonUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/common?key=${API_KEY}`;
-    const needurl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/need?key=${API_KEY}`;
+    const needUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/need?key=${API_KEY}`;
 
     // โหลดข้อมูลจาก common
     fetch(commonUrl, {
@@ -117,7 +129,7 @@ function loadButtonsFromSheet(accessToken) {
     .then(data => {
         buttonsByCategory["ทั่วไป"] = data.values?.map(row => row[0]) || [];
         // โหลดข้อมูลจาก need
-        return fetch(needurl, {
+        return fetch(needUrl, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${accessToken}`
@@ -126,7 +138,7 @@ function loadButtonsFromSheet(accessToken) {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error(`Failed to load food sheet: ${response.statusText}`);
+            throw new Error(`Failed to load need sheet: ${response.statusText}`);
         }
         return response.json();
     })
@@ -166,7 +178,7 @@ function loadButtons(category) {
         link.classList.remove('active', 'bg-blue-500', 'text-white');
         link.classList.add('text-gray-700', 'hover:bg-blue-500', 'hover:text-white');
     });
-    const activeNav = document.getElementById(`nav-${category === "ทั่วไป" ? "common" : "food"}`);
+    const activeNav = document.getElementById(`nav-${category === "ทั่วไป" ? "common" : category === "ความต้องการ" ? "need" : "fav"}`);
     activeNav.classList.add('active', 'bg-blue-500', 'text-white');
     activeNav.classList.remove('text-gray-700', 'hover:bg-blue-500', 'hover:text-white');
 }
@@ -190,11 +202,13 @@ function speakText(text) {
     }
 }
 
-// เรียกใช้ handleAuthResponse เมื่อโหลดหน้า
 window.onload = function() {
     if (window.location.hash) {
-        handleAuthResponse(); // เรียก handleAuthResponse เพื่อดึง access_token และโหลดปุ่ม
+        handleAuthResponse();
     } else {
-        authenticate();  // ถ้าไม่มี access_token ใน URL ให้เริ่ม OAuth2 Flow
+        authenticate();
     }
-};  
+    
+    // ตั้งค่า active ให้ปุ่ม "ทั่วไป" ตั้งแต่แรก
+    document.getElementById('nav-common').classList.add('active', 'bg-blue-500', 'text-white');
+};
