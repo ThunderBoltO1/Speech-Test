@@ -197,4 +197,4 @@ window.onload = function() {
     } else {
         authenticate();  // ถ้าไม่มี access_token ใน URL ให้เริ่ม OAuth2 Flow
     }
-};
+};  
