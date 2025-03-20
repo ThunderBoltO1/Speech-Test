@@ -177,76 +177,47 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("กรุณายืนยันตัวตน");
     }
 });
-
-// Function to switch categories
+// ฟังก์ชันสำหรับเลือกหมวดหมู่และเปลี่ยนสีพื้นหลัง
 function setCategory(category) {
     currentCategory = category;
     loadButtons(category);
+    changeBackgroundColor(category);
 }
 
-// Function to open mix words modal
-function openMixModal() {
-    const allWords = [];
-    for (const category in buttonsByCategory) {
-        if (buttonsByCategory[category]) {
-            allWords.push(...buttonsByCategory[category]);
-        }
+// ฟังก์ชันสำหรับโหลดปุ่มคำจากหมวดหมู่ที่เลือก
+function loadButtons(category) {
+    const buttonContainer = document.getElementById("button-container");
+    buttonContainer.innerHTML = '';  // ล้างปุ่มเก่า
+
+    const categoryButtons = buttonsByCategory[category];
+    if (categoryButtons && categoryButtons.length > 0) {
+        categoryButtons.forEach(function(word) {
+            let button = document.createElement("button");
+            button.className = "px-4 py-2 bg-blue-500 text-white rounded-lg transition-all duration-300 hover:bg-blue-600";
+            button.innerText = word;
+            button.onclick = () => speakText(word);
+            buttonContainer.appendChild(button);
+        });
+    } else {
+        console.log(`ไม่พบคำในหมวดหมู่ ${category}`);
     }
-    
-    const word1Select = document.getElementById('word1');
-    const word2Select = document.getElementById('word2');
-    const word3Select = document.getElementById('word3');
-    const word4Select = document.getElementById('word4');
-    const word5Select = document.getElementById('word5');
-    const word6Select = document.getElementById('word6');
-
-    word1Select.innerHTML = '<option value="">เลือกคำ</option>';
-    word2Select.innerHTML = '<option value="">เลือกคำ</option>';
-    word3Select.innerHTML = '<option value="">เลือกคำ</option>';
-    word4Select.innerHTML = '<option value="">เลือกคำ</option>';
-    word5Select.innerHTML = '<option value="">เลือกคำ</option>';
-    word6Select.innerHTML = '<option value="">เลือกคำ</option>';
-    
-    allWords.forEach(word => {
-        const option1 = document.createElement('option');
-        option1.value = word;
-        option1.textContent = word;
-        word1Select.appendChild(option1);
-        
-        const option2 = document.createElement('option');
-        option2.value = word;
-        option2.textContent = word;
-        word2Select.appendChild(option2);
-
-        const option3 = document.createElement('option');
-        option3.value = word;
-        option3.textContent = word;
-        word3Select.appendChild(option3);
-
-        const option4 = document.createElement('option');
-        option4.value = word;
-        option4.textContent = word;
-        word4Select.appendChild(option4);
-
-        const option5 = document.createElement('option');
-        option5.value = word;
-        option5.textContent = word;
-        word5Select.appendChild(option5);
-
-        const option6 = document.createElement('option');
-        option6.value = word;
-        option6.textContent = word;
-        word6Select.appendChild(option6);
-    });
-
-    document.getElementById('mix-modal').classList.remove('hidden');
 }
 
-// Function to close mix words modal
-function closeMixModal() {
-    document.getElementById('mix-modal').classList.add('hidden');
+// ฟังก์ชันเปลี่ยนสีพื้นหลังตามหมวดหมู่
+function changeBackgroundColor(category) {
+    const body = document.body;
+
+    // กำหนดสีพื้นหลังตามหมวดหมู่
+    if (category === "ทั่วไป") {
+        body.style.backgroundColor = "#f0f8ff";  // สีฟ้าอ่อนสำหรับหมวดทั่วไป
+    } else if (category === "ความต้องการ") {
+        body.style.backgroundColor = "#fff5e6";  // สีส้มอ่อนสำหรับหมวดความต้องการ
+    } else if (category === "คลัง") {
+        body.style.backgroundColor = "#e6ffe6";  // สีเขียวอ่อนสำหรับหมวดคลัง
+    }
 }
 
+// ฟังก์ชันการผสมคำ
 function mixWords() {
     const word1 = document.getElementById('word1').value;
     const word2 = document.getElementById('word2').value;
@@ -270,8 +241,10 @@ function mixWords() {
         <button onclick="speakMixedWord('${mixedWord}')" class="mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-300">พูด</button>
     `;
 
-    // ส่งคำผสมไปยัง Google Sheets (หมวดหมู่ที่เลือก)
-    const categorySheet = currentCategory === "คลัง" ? "storage" : currentCategory === "ความต้องการ" ? "need" : "storage";  // เลือก sheet ตามหมวดหมู่
+    // เลือก sheet ตามหมวดหมู่ที่ผู้ใช้เลือก
+    const categorySheet = currentCategory === "คลัง" ? "storage" : currentCategory === "ความต้องการ" ? "need" : "storage"; 
+
+    // ส่งคำผสมไปยัง Google Sheets (ตามหมวดหมู่ที่ผู้ใช้เลือก)
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${categorySheet}!A:A:append?valueInputOption=RAW&key=${API_KEY}`;
     
     fetch(url, {
