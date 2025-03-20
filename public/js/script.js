@@ -34,6 +34,7 @@ function closeModal() {
 // Function to open MixModal
 function openMixModal() {
     document.getElementById('mix-modal').classList.remove('hidden');
+    loadWordsForMixing();  // Load words from current category to buttons
 }
 
 // Function to close MixModal
@@ -213,22 +214,16 @@ function changeBackgroundColor(category) {
             break;
     }
 }
+
+// ฟังก์ชันการผสมคำ
+let selectedWords = [];
 function mixWords() {
-    const word1 = document.getElementById('word1').value;
-    const word2 = document.getElementById('word2').value;
-    const word3 = document.getElementById('word3').value;
-    const word4 = document.getElementById('word4').value;
-    const word5 = document.getElementById('word5').value;
-    const word6 = document.getElementById('word6').value;
-    
-    if (!word1 || !word2) {
+    if (selectedWords.length < 2) {
         alert("กรุณาเลือกคำอย่างน้อย 2 คำ");
         return;
     }
     
-    // รวมเฉพาะคำที่ถูกเลือก
-    const mixedWordsArray = [word1, word2, word3, word4, word5, word6].filter(w => w);
-    const mixedWord = mixedWordsArray.join(" ");
+    const mixedWord = selectedWords.join(" ");  // รวมคำที่เลือก
 
     // แสดงผลลัพธ์ที่ผสม
     document.getElementById('mix-result').innerHTML = `
@@ -263,4 +258,37 @@ function mixWords() {
 
     // ปิดโมดัลหลังจากผสมคำเสร็จ
     closeMixModal();  // ปิดโมดัลโดยอัตโนมัติ
+}
+
+// ฟังก์ชันโหลดคำสำหรับผสมจาก Google Sheets
+function loadWordsForMixing() {
+    const wordButtonsContainer = document.getElementById('word-buttons');
+    wordButtonsContainer.innerHTML = ''; // ล้างปุ่มเก่า
+
+    // ดึงข้อมูลจากหมวดหมู่ที่เลือกในปัจจุบัน
+    const categoryWords = buttonsByCategory[currentCategory];
+
+    if (categoryWords && categoryWords.length > 0) {
+        categoryWords.forEach(function(word) {
+            let button = document.createElement("button");
+            button.className = "px-4 py-2 bg-blue-500 text-white rounded-lg transition-all duration-300 hover:bg-blue-600";
+            button.innerText = word;
+            button.onclick = () => selectWordForMixing(word);
+            wordButtonsContainer.appendChild(button);
+        });
+    } else {
+        console.log(`ไม่พบคำในหมวดหมู่ ${currentCategory}`);
+    }
+}
+
+// ฟังก์ชันเลือกคำสำหรับการผสม
+function selectWordForMixing(word) {
+    if (selectedWords.includes(word)) {
+        selectedWords = selectedWords.filter(w => w !== word); // Remove word if already selected
+    } else {
+        selectedWords.push(word); // Add word to selectedWords array
+    }
+
+    // Update UI to show selected words
+    console.log("Selected Words:", selectedWords);
 }
