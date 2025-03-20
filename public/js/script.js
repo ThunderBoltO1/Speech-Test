@@ -108,6 +108,7 @@ function speakText(text) {
 function loadButtonsFromSheet(accessToken) {
     const commonUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/common?key=${API_KEY}`;
     const needUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/need?key=${API_KEY}`;
+    
 
     fetch(commonUrl, {
         method: "GET",
@@ -249,17 +250,46 @@ function mixWords() {
     const word6 = document.getElementById('word6').value;
     
     if (!word1 || !word2) {
-        alert("กรุณาเลือกคำทั้งสองคำ");
+        alert("กรุณาเลือกคำอย่างน้อย 2 คำ");
         return;
     }
     
-    const mixedWord = word1 + " " + word2 + " " + word3 + " " + word4 + " " + word5 + " " + word6;
+    // รวมเฉพาะคำที่ถูกเลือก
+    const mixedWordsArray = [word1, word2, word3, word4, word5, word6].filter(w => w);
+    const mixedWord = mixedWordsArray.join(" ");
 
-    // Show Mix Word
+    // แสดงผลลัพธ์ที่ผสม
     document.getElementById('mix-result').innerHTML = `
         <h1 class="text-2xl font-bold mt-4">${mixedWord}</h1>
-        <button onclick="speakMixedWord('${mixedWord}')" class="mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover-bg-green-300">พูด</button>
+        <button onclick="speakMixedWord('${mixedWord}')" class="mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-300">พูด</button>
     `;
 
+    // 🔹 บันทึกคำที่ผสมลง Google Sheets (sheet "storage")
+    saveMixedWordToSheet(mixedWord);
+
     closeMixModal();
+}
+
+// ฟังก์ชันบันทึกคำที่ผสมลง Google Sheets (Sheet "storage")
+function saveMixedWordToSheet(mixedWord) {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/storage!A:A:append?valueInputOption=RAW`;
+
+    fetch(url, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            values: [[mixedWord]]  // ส่งค่าที่ผสมเป็น array
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("บันทึกคำที่ผสมแล้ว:", data);
+    })
+    .catch(error => {
+        console.error("ไม่สามารถบันทึกคำที่ผสม:", error);
+        alert("เกิดข้อผิดพลาดในการบันทึกคำที่ผสม");
+    });
 }
