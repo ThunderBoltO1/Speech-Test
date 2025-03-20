@@ -31,7 +31,6 @@ function closeModal() {
     document.getElementById('modal').classList.add('hidden');
 }
 
-// Function to add a new word to the selected category
 function addButton() {
     const newButtonText = document.getElementById('buttonText').value.trim();
     if (newButtonText === "") {
@@ -39,15 +38,21 @@ function addButton() {
         return;
     }
 
+    // เพิ่มคำใหม่ในหมวดหมู่ที่เลือก
     if (!buttonsByCategory[currentCategory]) {
         buttonsByCategory[currentCategory] = [];
     }
     buttonsByCategory[currentCategory].push(newButtonText);
 
-    // Update button list
+    // อัปเดตปุ่มในหมวดหมู่ที่เลือก
     loadButtons(currentCategory);
 
-    const categorySheet = currentCategory === "ทั่วไป" ? "common" : currentCategory === "ความต้องการ" ? "need" : "storage";
+    // กำหนดชื่อ sheet ที่ต้องการเพิ่มคำใหม่ตามหมวดหมู่
+    const categorySheet = currentCategory === "ทั่วไป" ? "common" : 
+                          currentCategory === "ความต้องการ" ? "need" : 
+                          currentCategory === "คลัง" ? "storage" : "common"; // เพิ่มหมวด "คลัง" 
+
+    // API URL สำหรับการเพิ่มคำใน Google Sheets ตามหมวดหมู่ที่เลือก
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${categorySheet}!A:A:append?valueInputOption=RAW&key=${API_KEY}`;
     
     fetch(url, {
@@ -57,7 +62,7 @@ function addButton() {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            values: [[newButtonText]]  // Send new word as array
+            values: [[newButtonText]]  // ส่งคำใหม่ในรูปแบบ array
         })
     })
     .then(response => response.json())
@@ -287,4 +292,7 @@ function mixWords() {
         console.error("ไม่สามารถเพิ่มคำผสมไปยัง Google Sheets:", error);
         alert("ไม่สามารถเพิ่มคำผสมไปยัง Google Sheets ได้");
     });
+
+    // ปิดโมดัลหลังจากผสมคำเสร็จ
+    closeMixModal();  // ปิดโมดัลโดยอัตโนมัติ
 }
