@@ -89,32 +89,49 @@ function loadWordsForMixing() {
     // Clear any previous buttons before adding new ones
     wordButtonsContainer.innerHTML = '';
 
-    // Get the current category's words
-    const categoryWords = buttonsByCategory[currentCategory];
+    // Fetch words for the current category from Google Sheets
+    const categorySheet = currentCategory === "ทั่วไป" ? "common" :
+                          currentCategory === "ความต้องการ" ? "need" :
+                          currentCategory === "คลัง" ? "storage" : "common";
 
-    if (categoryWords && categoryWords.length > 0) {
-        categoryWords.forEach(function(word) {
-            let button = document.createElement("button");
-            button.className = "px-4 py-2 bg-blue-500 text-white rounded-lg transition-all duration-300 hover:bg-blue-600";
-            button.innerText = word;
-            button.onclick = () => selectWordForMixing(word);  // Handle word selection
-            wordButtonsContainer.appendChild(button);
-        });
-    } else {
-        console.log(`ไม่พบคำในหมวดหมู่ ${currentCategory}`);
-    }
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${categorySheet}?key=${API_KEY}`;
+    
+    fetch(url, {
+        method: "GET",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const categoryWords = data.values?.map(row => row[0]) || [];
+
+        if (categoryWords.length > 0) {
+            categoryWords.forEach(function(word) {
+                let button = document.createElement("button");
+                button.className = "px-4 py-2 bg-blue-500 text-white rounded-lg transition-all duration-300 hover:bg-blue-600";
+                button.innerText = word;
+                button.onclick = () => selectWordForMixing(word);  // Use this function for word selection
+                wordButtonsContainer.appendChild(button);
+            });
+        } else {
+            console.log(`ไม่พบคำในหมวดหมู่ ${currentCategory}`);
+        }
+    })
+    .catch(error => {
+        console.error("ไม่สามารถดึงข้อมูลจาก Google Sheets:", error);
+        alert("ไม่สามารถดึงข้อมูลจาก Google Sheets ได้");
+    });
 }
 
 // Function for selecting words for mixing
 function selectWordForMixing(word) {
-    // Ensure the word is added to the selectedWords array or removed if already selected
     if (selectedWords.includes(word)) {
         selectedWords = selectedWords.filter(w => w !== word); // Remove word if already selected
     } else {
         selectedWords.push(word); // Add word to selectedWords array
     }
 
-    // Log selected words for debugging
     console.log("Selected Words:", selectedWords);
 }
 
@@ -125,7 +142,6 @@ function mixWords() {
         return;
     }
 
-    // Mix the selected words and display the result
     const mixedWord = selectedWords.join(" ");
 
     // Display the mixed words
@@ -158,8 +174,7 @@ function mixWords() {
         alert("ไม่สามารถเพิ่มคำผสมไปยัง Google Sheets ได้");
     });
 
-    // Close the modal automatically after mixing words
-    closeMixModal();
+    closeMixModal();  // Close the modal after mixing words
 }
 
 // Function to close the mix words modal
@@ -170,7 +185,7 @@ function closeMixModal() {
 // Function to handle category change and update the background color
 function setCategory(category) {
     currentCategory = category;
-    loadButtons(category);
+    loadWordsForMixing();
     changeBackgroundColor(category);
 }
 
