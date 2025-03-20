@@ -20,7 +20,6 @@ function speakMixedWord(text) {
 
 // ตัวแปร global
 let buttonsByCategory = {};
-let currentCategory = "ทั่วไป";  // เก็บหมวดหมู่ที่เลือกในขณะนี้
 
 // ฟังก์ชันเปิด Modal เพิ่มคำ
 function openModal() {
@@ -157,11 +156,24 @@ function saveMixedWordToSheet(mixedWord) {
 
 // ฟังก์ชันผสมคำ
 function mixWords() {
+    // ดึงค่าคำที่ผู้ใช้เลือกจากช่องต่างๆ
+    const word1 = document.getElementById('word1').value;
+    const word2 = document.getElementById('word2').value;
+    const word3 = document.getElementById('word3').value;
+    const word4 = document.getElementById('word4').value;
+    const word5 = document.getElementById('word5').value;
+    const word6 = document.getElementById('word6').value;
+
+    // เก็บคำทั้งหมดที่เลือกใน array
+    const selectedWords = [word1, word2, word3, word4, word5, word6].filter(word => word);  // กรองเฉพาะคำที่ไม่ว่าง
+
+    // ตรวจสอบว่าเลือกคำอย่างน้อย 2 คำหรือไม่
     if (selectedWords.length < 2) {
         alert("กรุณาเลือกคำอย่างน้อย 2 คำเพื่อผสม");
         return;
     }
 
+    // ทำการผสมคำจากคำที่เลือก
     const mixedWord = selectedWords.join(" ");  // ผสมคำทั้งหมดที่เลือก
 
     // แสดงผลคำที่ผสมในหน้าเว็บ พร้อมปุ่ม "พูด"
