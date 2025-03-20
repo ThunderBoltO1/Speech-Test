@@ -7,10 +7,9 @@ const API_KEY = 'AIzaSyCugN1kot7Nij2PWhKsP08I6yeHNgsYrQI';
 
 let accessToken = '';  // ตัวแปรสำหรับเก็บ access token
 
-// ฟังก์ชันพูดคำที่ผสม
 function speakMixedWord(text) {
     if (window.responsiveVoice) {
-        window.responsiveVoice.speak(text, "Thai male");
+        window.responsiveVoice.speak(text, "Thai Male"); 
     } else {
         alert("ไม่พบ ResponsiveVoice API");
     }
