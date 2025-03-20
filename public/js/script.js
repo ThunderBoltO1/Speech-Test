@@ -9,8 +9,8 @@ let accessToken = '';  // ตัวแปรสำหรับเก็บ acces
 
 // ฟังก์ชันพูดคำที่ผสม
 function speakMixedWord(text) {
-    if (window.responsiveVoice) {
-        window.responsiveVoice.speak(text, "Thai male");
+    if (responsiveVoice) {
+        responsiveVoice.speak(text, "Thai male");
     } else {
         alert("ไม่พบ ResponsiveVoice API");
     }
@@ -191,7 +191,7 @@ function openMixModal() {
     const word4Select = document.getElementById('word4');
     const word5Select = document.getElementById('word5');
     const word6Select = document.getElementById('word6');
-    
+
     word1Select.innerHTML = '<option value="">เลือกคำ</option>';
     word2Select.innerHTML = '<option value="">เลือกคำ</option>';
     word3Select.innerHTML = '<option value="">เลือกคำ</option>';
@@ -211,24 +211,24 @@ function openMixModal() {
         word2Select.appendChild(option2);
 
         const option3 = document.createElement('option');
-        option2.value = word;
-        option2.textContent = word;
-        word2Select.appendChild(option3);
+        option3.value = word;
+        option3.textContent = word;
+        word3Select.appendChild(option3);
 
         const option4 = document.createElement('option');
-        option2.value = word;
-        option2.textContent = word;
-        word2Select.appendChild(option4);
+        option4.value = word;
+        option4.textContent = word;
+        word4Select.appendChild(option4);
 
         const option5 = document.createElement('option');
-        option2.value = word;
-        option2.textContent = word;
-        word2Select.appendChild(option5);
+        option5.value = word;
+        option5.textContent = word;
+        word5Select.appendChild(option5);
 
         const option6 = document.createElement('option');
-        option2.value = word;
-        option2.textContent = word;
-        word2Select.appendChild(option6);
+        option6.value = word;
+        option6.textContent = word;
+        word6Select.appendChild(option6);
     });
 
     document.getElementById('mix-modal').classList.remove('hidden');
