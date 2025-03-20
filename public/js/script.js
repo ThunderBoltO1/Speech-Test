@@ -49,7 +49,7 @@ function addButton() {
     loadButtons(currentCategory);
 
     // ส่งคำใหม่ไปยัง Google Sheets
-    const categorySheet = currentCategory === "ทั่วไป" ? "common" : "need";  // เลือก sheet ตามหมวดหมู่
+    const categorySheet = currentCategory === "ทั่วไป" ? "common" : currentCategory === "ความต้องการ" ? "need" : "storage";  // เลือก sheet ตามหมวดหมู่
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${categorySheet}!A:A:append?valueInputOption=RAW&key=${API_KEY}`;
     
     fetch(url, {
@@ -107,6 +107,7 @@ function speakText(text) {
 function loadButtonsFromSheet(accessToken) {
     const commonUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/common?key=${API_KEY}`;
     const needUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/need?key=${API_KEY}`;
+    const storageUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/storage?key=${API_KEY}`;
 
     fetch(commonUrl, {
         method: "GET",
@@ -127,6 +128,16 @@ function loadButtonsFromSheet(accessToken) {
         buttonsByCategory["ความต้องการ"] = data.values?.map(row => row[0]) || [];
         // เรียกใช้ฟังก์ชัน loadButtons สำหรับหมวดหมู่ความต้องการ
         loadButtons("ความต้องการ");
+        return fetch(storageUrl, {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+    })
+    .then(response => response.json())
+    .then(data => {
+        buttonsByCategory["storage"] = data.values?.map(row => row[0]) || [];
+        // เรียกใช้ฟังก์ชัน loadButtons สำหรับหมวดหมู่ storage
+        loadButtons("storage");
     })
     .catch(error => {
         console.error("Error loading buttons:", error);
@@ -221,11 +232,9 @@ function mixWords() {
     
     const mixedWord = word1 + " " + word2;
 
-    // Show Mix Word
     document.getElementById('mix-result').innerHTML = `
-        <h1 class="text-2xl font-bold mt-4">${mixedWord}</h1>
-        <button onclick="speakMixedWord('${mixedWord}')" class="mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover-bg-green-300">พูด</button>
-    `;
-
+    <h1 class="text-2xl font-bold mt-4">${mixedWord}</h1>
+    <button onclick="speakMixedWord('${mixedWord}')" class="mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">พูด</button>
+`;
     closeMixModal();
 }
