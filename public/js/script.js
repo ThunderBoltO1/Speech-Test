@@ -7,7 +7,7 @@ const API_KEY = 'AIzaSyCugN1kot7Nij2PWhKsP08I6yeHNgsYrQI';
 
 let accessToken = '';  // ตัวแปรสำหรับเก็บ access token
 
-// ฟังก์ชันพูดคำ
+// ฟังก์ชันพูดคำที่ผสม
 function speakMixedWord(text) {
     if (window.responsiveVoice) {
         window.responsiveVoice.speak(text, "Thai male");
@@ -15,15 +15,6 @@ function speakMixedWord(text) {
         alert("ไม่พบ ResponsiveVoice API");
     }
 }
-
-function speakText(text) {
-    if (responsiveVoice) {
-        responsiveVoice.speak(text, "Thai Male");
-    } else {
-        alert("ไม่พบ ResponsiveVoice API");
-    }
-}
-
 
 // ตัวแปร global
 let buttonsByCategory = {};
@@ -104,6 +95,14 @@ function loadButtons(category) {
     }
 }
 
+// ฟังก์ชันพูดข้อความ
+function speakText(text) {
+    if (responsiveVoice) {
+        responsiveVoice.speak(text, "Thai Male");
+    } else {
+        alert("ไม่พบ ResponsiveVoice API");
+    }
+}
 
 // ฟังก์ชันโหลดคำจาก Google Sheets (ปรับให้ใช้ access token)
 function loadButtonsFromSheet(accessToken) {
