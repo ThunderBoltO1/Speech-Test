@@ -7,69 +7,39 @@ const API_KEY = 'AIzaSyCugN1kot7Nij2PWhKsP08I6yeHNgsYrQI';
 
 // ตัวแปร global
 let buttonsByCategory = {};
+let currentCategory = "ทั่วไป";  // เก็บหมวดหมู่ที่เลือกในขณะนี้
 
-// ฟังก์ชันเปิด Modal ผสมคำ
-function openMixModal() {
-    const allWords = [];
-    for (const category in buttonsByCategory) {
-        if (buttonsByCategory[category]) {
-            allWords.push(...buttonsByCategory[category]);
-        }
-    }
-    
-    const word1Select = document.getElementById('word1');
-    const word2Select = document.getElementById('word2');
-    word1Select.innerHTML = '<option value="">เลือกคำ</option>';
-    word2Select.innerHTML = '<option value="">เลือกคำ</option>';
-    
-    allWords.forEach(word => {
-        const option1 = document.createElement('option');
-        option1.value = word;
-        option1.textContent = word;
-        word1Select.appendChild(option1);
-        
-        const option2 = document.createElement('option');
-        option2.value = word;
-        option2.textContent = word;
-        word2Select.appendChild(option2);
-    });
-
-    document.getElementById('mix-modal').classList.remove('hidden');
+// ฟังก์ชันเปิด Modal เพิ่มคำ
+function openModal() {
+    // ตั้งค่า input เป็นค่าว่าง
+    document.getElementById('buttonText').value = '';
+    document.getElementById('modal').classList.remove('hidden');
 }
 
-// ฟังก์ชันปิด Modal ผสมคำ
-function closeMixModal() {
-    document.getElementById('mix-modal').classList.add('hidden');
+// ฟังก์ชันปิด Modal เพิ่มคำ
+function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
 }
 
-// ฟังก์ชันผสมคำ
-function mixWords() {
-    const word1 = document.getElementById('word1').value;
-    const word2 = document.getElementById('word2').value;
-    
-    if (!word1 || !word2) {
-        alert("กรุณาเลือกคำทั้งสองคำ");
+// ฟังก์ชันเพิ่มคำใหม่ในหมวดหมู่ที่เลือก
+function addButton() {
+    const newButtonText = document.getElementById('buttonText').value.trim();
+    if (newButtonText === "") {
+        alert("กรุณากรอกข้อความ");
         return;
     }
-    
-    const mixedWord = word1 + " " + word2;
 
-    // แสดงผลลัพธ์ใน h1 และปุ่มพูด
-    document.getElementById('mix-result').innerHTML = `
-        <h1 class="text-2xl font-bold mt-4">${mixedWord}</h1>
-        <button onclick="speakMixedWord('${mixedWord}')" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">พูด</button>
-    `;
-
-    closeMixModal();
-}
-
-// ฟังก์ชันพูดคำที่ผสม
-function speakMixedWord(text) {
-    if (window.responsiveVoice) {
-        window.responsiveVoice.speak(text, "Thai Female");
-    } else {
-        alert("ไม่พบ ResponsiveVoice API");
+    // เพิ่มคำในหมวดหมู่ที่เลือก
+    if (!buttonsByCategory[currentCategory]) {
+        buttonsByCategory[currentCategory] = [];
     }
+    buttonsByCategory[currentCategory].push(newButtonText);
+
+    // แสดงปุ่มใหม่ในหมวดหมู่ที่เลือก
+    loadButtons(currentCategory);
+
+    // ปิด Modal
+    closeModal();
 }
 
 // ฟังก์ชันโหลดคำจาก Google Sheets
@@ -82,7 +52,7 @@ function loadButtons(category) {
         categoryButtons.forEach(function(word) {
             let button = document.createElement("button");
             button.className = "px-4 py-2 bg-blue-500 text-white rounded-lg transition-all duration-300 hover:bg-blue-600";
-            button.innerText = word;  // ใช้คำจาก Google Sheets
+            button.innerText = word;
             button.onclick = () => speakText(word);
             buttonContainer.appendChild(button);
         });
@@ -158,3 +128,9 @@ document.addEventListener('DOMContentLoaded', function() {
         authenticate();
     }
 });
+
+// ฟังก์ชันสำหรับเลือกหมวดหมู่
+function setCategory(category) {
+    currentCategory = category;
+    loadButtons(category);
+}

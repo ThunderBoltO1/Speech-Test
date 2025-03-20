@@ -19,11 +19,16 @@
         }
     </style>
 </head>
+
+
+
+
 <body>
+
+    <!-- Mix -->
     <div class="bg-blue-500 text-white text-center p-4">
         <h1>
-    <!-- แสดงผลคำที่ผสม -->
-            <div id="mix-result" class="text-center mt-6"></div></h1>
+            <div id="mix-result" class="text-center mt-6 bg-green-500"></div></h1>
     </div>
 
     <div class="w-full bg-white shadow-md p-4">
@@ -32,16 +37,27 @@
             <button id="nav-need" class="nav-link px-4 py-2 rounded-lg transition-all duration-300 hover:bg-blue-500 hover:text-white font-medium text-gray-700" onclick="loadButtons('ความต้องการ')">ความต้องการ</button>
             <button id="nav-fav" class="nav-link px-4 py-2 rounded-lg transition-all duration-300 hover:bg-blue-500 hover:text-white font-medium text-gray-700" onclick="loadButtons('คลัง')">คลัง</button>
         </nav>
-        <div class="flex justify-center space-x-4">
-            <button id="btn-add" class="px-4 py-2 bg-green-500 text-white rounded-lg transition-all duration-300 hover:bg-green-600 font-medium" onclick="openModal()">เพิ่มคำ</button>
-            <button id="btn-mix" class="px-4 py-2 bg-purple-500 text-white rounded-lg transition-all duration-300 hover:bg-purple-600 font-medium" onclick="openMixModal()">ผสมคำ</button>
-        </div>
     </div>
 
-    <!-- ส่วนเนื้อหา (Content) -->
+    <!-- Content -->
     <div class="flex-1 p-4">
         <div id="button-container" class="grid grid-flow-row-dense grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
     </div>
+
+    <div class="flex justify-center space-x-4">
+        <button id="btn-add" class="px-4 py-2 bg-green-500 text-white rounded-lg transition-all duration-300 hover:bg-green-600 font-medium" onclick="openModal()">เพิ่มคำ</button>
+        <button id="btn-mix" class="px-4 py-2 bg-purple-500 text-white rounded-lg transition-all duration-300 hover:bg-purple-600 font-medium" onclick="openMixModal()">ผสมคำ</button>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
 
     <!-- Modal เพิ่มปุ่มใหม่ -->
     <div id="modal" class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center hidden">
@@ -54,6 +70,7 @@
             </div>
         </div>
     </div>
+
 
     <!-- Modal ผสมคำ -->
     <div id="mix-modal" class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center hidden">
