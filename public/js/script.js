@@ -187,8 +187,17 @@ function openMixModal() {
     
     const word1Select = document.getElementById('word1');
     const word2Select = document.getElementById('word2');
+    const word3Select = document.getElementById('word3');
+    const word4Select = document.getElementById('word4');
+    const word5Select = document.getElementById('word5');
+    const word6Select = document.getElementById('word6');
+    
     word1Select.innerHTML = '<option value="">เลือกคำ</option>';
     word2Select.innerHTML = '<option value="">เลือกคำ</option>';
+    word3Select.innerHTML = '<option value="">เลือกคำ</option>';
+    word4Select.innerHTML = '<option value="">เลือกคำ</option>';
+    word5Select.innerHTML = '<option value="">เลือกคำ</option>';
+    word6Select.innerHTML = '<option value="">เลือกคำ</option>';
     
     allWords.forEach(word => {
         const option1 = document.createElement('option');
@@ -200,6 +209,26 @@ function openMixModal() {
         option2.value = word;
         option2.textContent = word;
         word2Select.appendChild(option2);
+
+        const option3 = document.createElement('option');
+        option2.value = word;
+        option2.textContent = word;
+        word2Select.appendChild(option3);
+
+        const option4 = document.createElement('option');
+        option2.value = word;
+        option2.textContent = word;
+        word2Select.appendChild(option4);
+
+        const option5 = document.createElement('option');
+        option2.value = word;
+        option2.textContent = word;
+        word2Select.appendChild(option5);
+
+        const option6 = document.createElement('option');
+        option2.value = word;
+        option2.textContent = word;
+        word2Select.appendChild(option6);
     });
 
     document.getElementById('mix-modal').classList.remove('hidden');
@@ -214,13 +243,17 @@ function closeMixModal() {
 function mixWords() {
     const word1 = document.getElementById('word1').value;
     const word2 = document.getElementById('word2').value;
+    const word3 = document.getElementById('word3').value;
+    const word4 = document.getElementById('word4').value;
+    const word5 = document.getElementById('word5').value;
+    const word6 = document.getElementById('word6').value;
     
     if (!word1 || !word2) {
         alert("กรุณาเลือกคำทั้งสองคำ");
         return;
     }
     
-    const mixedWord = word1 + " " + word2;
+    const mixedWord = word1 + " " + word2 + " " + word3 + " " + word4 + " " + word5 + " " + word6;
 
     // Show Mix Word
     document.getElementById('mix-result').innerHTML = `
