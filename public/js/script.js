@@ -31,6 +31,16 @@ function closeModal() {
     document.getElementById('modal').classList.add('hidden');
 }
 
+// Function to open MixModal
+function openMixModal() {
+    document.getElementById('mix-modal').classList.remove('hidden');
+}
+
+// Function to close MixModal
+function closeMixModal() {
+    document.getElementById('mix-modal').classList.add('hidden');
+}
+
 function addButton() {
     const newButtonText = document.getElementById('buttonText').value.trim();
     if (newButtonText === "") {
