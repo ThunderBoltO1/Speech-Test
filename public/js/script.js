@@ -10,7 +10,7 @@ let accessToken = '';  // ตัวแปรสำหรับเก็บ acces
 // ฟังก์ชันพูดคำที่ผสม
 function speakMixedWord(text) {
     if (responsiveVoice) {
-        responsiveVoice.speak(text, "Thai male");
+        responsiveVoice.speak(text, "Thai Male");
     } else {
         alert("ไม่พบ ResponsiveVoice API");
     }
