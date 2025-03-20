@@ -213,8 +213,6 @@ function changeBackgroundColor(category) {
             break;
     }
 }
-
-// ฟังก์ชันการผสมคำ
 function mixWords() {
     const word1 = document.getElementById('word1').value;
     const word2 = document.getElementById('word2').value;
@@ -239,7 +237,7 @@ function mixWords() {
     `;
 
     // เลือก sheet ตามหมวดหมู่ที่ผู้ใช้เลือก
-    const categorySheet = currentCategory === "คลัง" ? "storage" : currentCategory === "ความต้องการ" ? "need" : "storage"; 
+    const categorySheet = currentCategory === "คลัง" ? "storage" : currentCategory === "ความต้องการ" ? "need" : "common"; 
 
     // ส่งคำผสมไปยัง Google Sheets (ตามหมวดหมู่ที่ผู้ใช้เลือก)
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${categorySheet}!A:A:append?valueInputOption=RAW&key=${API_KEY}`;
