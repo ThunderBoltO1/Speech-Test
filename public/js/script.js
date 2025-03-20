@@ -47,7 +47,7 @@ function addButton() {
     // Update button list
     loadButtons(currentCategory);
 
-    const categorySheet = currentCategory === "ทั่วไป" ? "common" : "need";  
+    const categorySheet = currentCategory === "ทั่วไป" ? "common" : currentCategory === "ความต้องการ" ? "need" : "storage";
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${categorySheet}!A:A:append?valueInputOption=RAW&key=${API_KEY}`;
     
     fetch(url, {
@@ -131,7 +131,7 @@ function loadButtonsFromSheet(accessToken) {
     .then(response => response.json())
     .then(data => {
         buttonsByCategory["คลัง"] = data.values?.map(row => row[0]) || [];
-        loadButtons("คลัง");
+        loadButtons("คลัง");  // เรียกใช้ loadButtons สำหรับ "คลัง" หลังจากดึงข้อมูล
     })
     .catch(error => {
         console.error("Error loading buttons:", error);
@@ -266,7 +266,7 @@ function mixWords() {
     `;
 
     // ส่งคำผสมไปยัง Google Sheets (หมวดหมู่ที่เลือก)
-    const categorySheet = currentCategory === "ทั่วไป" ? "common" : "need";  // เลือก sheet ตามหมวดหมู่
+    const categorySheet = currentCategory === "ทั่วไป" ? "common" : currentCategory === "ความต้องการ" ? "need" : "storage";  // เลือก sheet ตามหมวดหมู่
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${categorySheet}!A:A:append?valueInputOption=RAW&key=${API_KEY}`;
     
     fetch(url, {
