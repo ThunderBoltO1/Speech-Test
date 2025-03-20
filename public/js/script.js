@@ -5,6 +5,26 @@ const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8";
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const API_KEY = 'AIzaSyCugN1kot7Nij2PWhKsP08I6yeHNgsYrQI';
 
+let accessToken = '';  // ตัวแปรสำหรับเก็บ access token
+
+// ฟังก์ชันพูดคำ
+function speakMixedWord(text) {
+    if (window.responsiveVoice) {
+        window.responsiveVoice.speak(text, "Thai male");
+    } else {
+        alert("ไม่พบ ResponsiveVoice API");
+    }
+}
+
+function speakText(text) {
+    if (responsiveVoice) {
+        responsiveVoice.speak(text, "Thai Male");
+    } else {
+        alert("ไม่พบ ResponsiveVoice API");
+    }
+}
+
+
 // ตัวแปร global
 let buttonsByCategory = {};
 let currentCategory = "ทั่วไป";  // เก็บหมวดหมู่ที่เลือกในขณะนี้
@@ -38,6 +58,29 @@ function addButton() {
     // แสดงปุ่มใหม่ในหมวดหมู่ที่เลือก
     loadButtons(currentCategory);
 
+    // ส่งคำใหม่ไปยัง Google Sheets
+    const categorySheet = currentCategory === "ทั่วไป" ? "common" : "need";  // เลือก sheet ตามหมวดหมู่
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${categorySheet}!A:A:append?valueInputOption=RAW&key=${API_KEY}`;
+    
+    fetch(url, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            values: [[newButtonText]]  // ส่งคำใหม่ในรูปแบบ array
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("คำใหม่ถูกเพิ่มแล้ว:", data);
+    })
+    .catch(error => {
+        console.error("ไม่สามารถเพิ่มคำไปยัง Google Sheets:", error);
+        alert("ไม่สามารถเพิ่มคำไปยัง Google Sheets ได้");
+    });
+
     // ปิด Modal
     closeModal();
 }
@@ -61,14 +104,6 @@ function loadButtons(category) {
     }
 }
 
-// ฟังก์ชันพูดข้อความ
-function speakText(text) {
-    if (responsiveVoice) {
-        responsiveVoice.speak(text, "Thai Male");
-    } else {
-        alert("ไม่พบ ResponsiveVoice API");
-    }
-}
 
 // ฟังก์ชันโหลดคำจาก Google Sheets (ปรับให้ใช้ access token)
 function loadButtonsFromSheet(accessToken) {
@@ -110,7 +145,7 @@ function authenticate() {
 // ฟังก์ชันจัดการ Token
 function handleAuthResponse() {
     const params = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = params.get('access_token');
+    accessToken = params.get('access_token');  // เก็บ access token ที่ได้รับ
     if (accessToken) {
         console.log("Access Token:", accessToken);
         loadButtonsFromSheet(accessToken);
@@ -126,6 +161,13 @@ document.addEventListener('DOMContentLoaded', function() {
         handleAuthResponse();
     } else {
         authenticate();
+    }
+
+    // ตรวจสอบว่ามี accessToken หรือไม่
+    if (accessToken) {
+        loadButtonsFromSheet(accessToken);
+    } else {
+        alert("กรุณายืนยันตัวตน");
     }
 });
 
@@ -188,13 +230,4 @@ function mixWords() {
     `;
 
     closeMixModal();
-}
-
-// ฟังก์ชันพูดคำที่ผสม
-function speakMixedWord(text) {
-    if (window.responsiveVoice) {
-        window.responsiveVoice.speak(text, "Thai Female");
-    } else {
-        alert("ไม่พบ ResponsiveVoice API");
-    }
 }
