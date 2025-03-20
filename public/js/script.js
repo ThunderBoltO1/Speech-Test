@@ -170,6 +170,12 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         authenticate();
     }
+
+    if (accessToken) {
+        loadButtonsFromSheet(accessToken);
+    } else {
+        console.log("กรุณายืนยันตัวตน");
+    }
 });
 
 // ฟังก์ชันสำหรับเลือกหมวดหมู่และเปลี่ยนสีพื้นหลัง
@@ -177,6 +183,25 @@ function setCategory(category) {
     currentCategory = category;
     loadButtons(category);
     changeBackgroundColor(category);
+}
+
+// ฟังก์ชันการเปลี่ยนสีพื้นหลังตามหมวดหมู่
+function changeBackgroundColor(category) {
+    const body = document.body;
+    switch (category) {
+        case "ทั่วไป":
+            body.style.backgroundColor = "#f0f4f8"; // Light blue for "ทั่วไป"
+            break;
+        case "ความต้องการ":
+            body.style.backgroundColor = "#fffbf0"; // Light yellow for "ความต้องการ"
+            break;
+        case "คลัง":
+            body.style.backgroundColor = "#f0f8f0"; // Light green for "คลัง"
+            break;
+        default:
+            body.style.backgroundColor = "#ffffff"; // White background as default
+            break;
+    }
 }
 
 // ฟังก์ชันการผสมคำ
