@@ -134,3 +134,67 @@ function setCategory(category) {
     currentCategory = category;
     loadButtons(category);
 }
+
+// ฟังก์ชันเปิด Modal ผสมคำ
+function openMixModal() {
+    const allWords = [];
+    for (const category in buttonsByCategory) {
+        if (buttonsByCategory[category]) {
+            allWords.push(...buttonsByCategory[category]);
+        }
+    }
+    
+    const word1Select = document.getElementById('word1');
+    const word2Select = document.getElementById('word2');
+    word1Select.innerHTML = '<option value="">เลือกคำ</option>';
+    word2Select.innerHTML = '<option value="">เลือกคำ</option>';
+    
+    allWords.forEach(word => {
+        const option1 = document.createElement('option');
+        option1.value = word;
+        option1.textContent = word;
+        word1Select.appendChild(option1);
+        
+        const option2 = document.createElement('option');
+        option2.value = word;
+        option2.textContent = word;
+        word2Select.appendChild(option2);
+    });
+
+    document.getElementById('mix-modal').classList.remove('hidden');
+}
+
+// ฟังก์ชันปิด Modal ผสมคำ
+function closeMixModal() {
+    document.getElementById('mix-modal').classList.add('hidden');
+}
+
+// ฟังก์ชันผสมคำ
+function mixWords() {
+    const word1 = document.getElementById('word1').value;
+    const word2 = document.getElementById('word2').value;
+    
+    if (!word1 || !word2) {
+        alert("กรุณาเลือกคำทั้งสองคำ");
+        return;
+    }
+    
+    const mixedWord = word1 + " " + word2;
+
+    // Show Mix Word
+    document.getElementById('mix-result').innerHTML = `
+        <h1 class="text-2xl font-bold mt-4">${mixedWord}</h1>
+        <button onclick="speakMixedWord('${mixedWord}')" class="mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover-bg-green-300">พูด</button>
+    `;
+
+    closeMixModal();
+}
+
+// ฟังก์ชันพูดคำที่ผสม
+function speakMixedWord(text) {
+    if (window.responsiveVoice) {
+        window.responsiveVoice.speak(text, "Thai Female");
+    } else {
+        alert("ไม่พบ ResponsiveVoice API");
+    }
+}
