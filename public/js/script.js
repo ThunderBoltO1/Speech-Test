@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (accessToken) {
         loadButtonsFromSheet(accessToken);
     } else {
-        alert("กรุณายืนยันตัวตน");
+        console.log("กรุณายืนยันตัวตน");
     }
 });
 
@@ -266,7 +266,7 @@ function mixWords() {
     `;
 
     // ส่งคำผสมไปยัง Google Sheets (หมวดหมู่ที่เลือก)
-    const categorySheet = currentCategory === "ทั่วไป" ? "common" : currentCategory === "ความต้องการ" ? "need" : "storage";  // เลือก sheet ตามหมวดหมู่
+    const categorySheet = currentCategory === "คลัง" ? "storage" : currentCategory === "ความต้องการ" ? "need" : "storage";  // เลือก sheet ตามหมวดหมู่
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${categorySheet}!A:A:append?valueInputOption=RAW&key=${API_KEY}`;
     
     fetch(url, {
