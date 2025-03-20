@@ -45,7 +45,7 @@ function addButton() {
     buttonsByCategory[currentCategory].push(newButtonText);
 
     // อัปเดตปุ่มในหมวดหมู่ที่เลือก
-    loadButtons(currentCategory);
+    setCategory(currentCategory);
 
     // กำหนดชื่อ sheet ที่ต้องการเพิ่มคำใหม่ตามหมวดหมู่
     const categorySheet = currentCategory === "ทั่วไป" ? "common" : 
@@ -170,51 +170,13 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         authenticate();
     }
-
-    if (accessToken) {
-        loadButtonsFromSheet(accessToken);
-    } else {
-        console.log("กรุณายืนยันตัวตน");
-    }
 });
+
 // ฟังก์ชันสำหรับเลือกหมวดหมู่และเปลี่ยนสีพื้นหลัง
 function setCategory(category) {
     currentCategory = category;
     loadButtons(category);
     changeBackgroundColor(category);
-}
-
-// ฟังก์ชันสำหรับโหลดปุ่มคำจากหมวดหมู่ที่เลือก
-function loadButtons(category) {
-    const buttonContainer = document.getElementById("button-container");
-    buttonContainer.innerHTML = '';  // ล้างปุ่มเก่า
-
-    const categoryButtons = buttonsByCategory[category];
-    if (categoryButtons && categoryButtons.length > 0) {
-        categoryButtons.forEach(function(word) {
-            let button = document.createElement("button");
-            button.className = "px-4 py-2 bg-blue-500 text-white rounded-lg transition-all duration-300 hover:bg-blue-600";
-            button.innerText = word;
-            button.onclick = () => speakText(word);
-            buttonContainer.appendChild(button);
-        });
-    } else {
-        console.log(`ไม่พบคำในหมวดหมู่ ${category}`);
-    }
-}
-
-// ฟังก์ชันเปลี่ยนสีพื้นหลังตามหมวดหมู่
-function changeBackgroundColor(category) {
-    const body = document.body;
-
-    // กำหนดสีพื้นหลังตามหมวดหมู่
-    if (category === "ทั่วไป") {
-        body.style.backgroundColor = "#f0f8ff";  // สีฟ้าอ่อนสำหรับหมวดทั่วไป
-    } else if (category === "ความต้องการ") {
-        body.style.backgroundColor = "#fff5e6";  // สีส้มอ่อนสำหรับหมวดความต้องการ
-    } else if (category === "คลัง") {
-        body.style.backgroundColor = "#e6ffe6";  // สีเขียวอ่อนสำหรับหมวดคลัง
-    }
 }
 
 // ฟังก์ชันการผสมคำ
