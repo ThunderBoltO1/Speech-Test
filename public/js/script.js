@@ -5,9 +5,13 @@ const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8";
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const API_KEY = 'AIzaSyCugN1kot7Nij2PWhKsP08I6yeHNgsYrQI';
 
-let accessToken = '';  // ตัวแปรสำหรับเก็บ access token
+let accessToken = '';  // Store access token
 
-// ฟังก์ชันพูดคำที่ผสม
+// Global variable
+let buttonsByCategory = {};
+let currentCategory = "ทั่วไป";  // Default category
+
+// Function to speak mixed words
 function speakMixedWord(text) {
     if (responsiveVoice) {
         responsiveVoice.speak(text, "Thai Male");
@@ -16,23 +20,18 @@ function speakMixedWord(text) {
     }
 }
 
-// ตัวแปร global
-let buttonsByCategory = {};
-let currentCategory = "ทั่วไป";  // เก็บหมวดหมู่ที่เลือกในขณะนี้
-
-// ฟังก์ชันเปิด Modal เพิ่มคำ
+// Function to open modal for adding a new word
 function openModal() {
-    // ตั้งค่า input เป็นค่าว่าง
     document.getElementById('buttonText').value = '';
     document.getElementById('modal').classList.remove('hidden');
 }
 
-// ฟังก์ชันปิด Modal เพิ่มคำ
+// Function to close modal
 function closeModal() {
     document.getElementById('modal').classList.add('hidden');
 }
 
-// ฟังก์ชันเพิ่มคำใหม่ในหมวดหมู่ที่เลือก
+// Function to add a new word to the selected category
 function addButton() {
     const newButtonText = document.getElementById('buttonText').value.trim();
     if (newButtonText === "") {
@@ -40,17 +39,15 @@ function addButton() {
         return;
     }
 
-    // เพิ่มคำในหมวดหมู่ที่เลือก
     if (!buttonsByCategory[currentCategory]) {
         buttonsByCategory[currentCategory] = [];
     }
     buttonsByCategory[currentCategory].push(newButtonText);
 
-    // แสดงปุ่มใหม่ในหมวดหมู่ที่เลือก
+    // Update button list
     loadButtons(currentCategory);
 
-    // ส่งคำใหม่ไปยัง Google Sheets
-    const categorySheet = currentCategory === "ทั่วไป" ? "common" : "need";  // เลือก sheet ตามหมวดหมู่
+    const categorySheet = currentCategory === "ทั่วไป" ? "common" : "need";  
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${categorySheet}!A:A:append?valueInputOption=RAW&key=${API_KEY}`;
     
     fetch(url, {
@@ -60,7 +57,7 @@ function addButton() {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            values: [[newButtonText]]  // ส่งคำใหม่ในรูปแบบ array
+            values: [[newButtonText]]  // Send new word as array
         })
     })
     .then(response => response.json())
@@ -72,14 +69,13 @@ function addButton() {
         alert("ไม่สามารถเพิ่มคำไปยัง Google Sheets ได้");
     });
 
-    // ปิด Modal
     closeModal();
 }
 
-// ฟังก์ชันโหลดคำจาก Google Sheets
+// Function to load buttons based on category
 function loadButtons(category) {
     const buttonContainer = document.getElementById("button-container");
-    buttonContainer.innerHTML = '';  // เคลียร์ปุ่มเดิม
+    buttonContainer.innerHTML = '';  // Clear previous buttons
 
     const categoryButtons = buttonsByCategory[category];
     if (categoryButtons && categoryButtons.length > 0) {
@@ -95,7 +91,7 @@ function loadButtons(category) {
     }
 }
 
-// ฟังก์ชันพูดข้อความ
+// Function to speak selected text
 function speakText(text) {
     if (responsiveVoice) {
         responsiveVoice.speak(text, "Thai Male");
@@ -104,11 +100,11 @@ function speakText(text) {
     }
 }
 
-// ฟังก์ชันโหลดคำจาก Google Sheets (ปรับให้ใช้ access token)
+// Function to load buttons from Google Sheets
 function loadButtonsFromSheet(accessToken) {
     const commonUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/common?key=${API_KEY}`;
     const needUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/need?key=${API_KEY}`;
-    const storageUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/storage?key=${API_KEY}`;  // URL สำหรับโหลดคำจาก sheet storage
+    const storageUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/storage?key=${API_KEY}`;
     
     fetch(commonUrl, {
         method: "GET",
@@ -117,7 +113,6 @@ function loadButtonsFromSheet(accessToken) {
     .then(response => response.json())
     .then(data => {
         buttonsByCategory["ทั่วไป"] = data.values?.map(row => row[0]) || [];
-        // เรียกใช้ฟังก์ชัน loadButtons สำหรับหมวดหมู่ทั่วไป
         loadButtons("ทั่วไป");
         return fetch(needUrl, {
             method: "GET",
@@ -127,7 +122,6 @@ function loadButtonsFromSheet(accessToken) {
     .then(response => response.json())
     .then(data => {
         buttonsByCategory["ความต้องการ"] = data.values?.map(row => row[0]) || [];
-        // เรียกใช้ฟังก์ชัน loadButtons สำหรับหมวดหมู่ความต้องการ
         loadButtons("ความต้องการ");
         return fetch(storageUrl, {
             method: "GET",
@@ -137,7 +131,6 @@ function loadButtonsFromSheet(accessToken) {
     .then(response => response.json())
     .then(data => {
         buttonsByCategory["คลัง"] = data.values?.map(row => row[0]) || [];
-        // เรียกใช้ฟังก์ชัน loadButtons สำหรับหมวดหมู่คลัง
         loadButtons("คลัง");
     })
     .catch(error => {
@@ -146,35 +139,16 @@ function loadButtonsFromSheet(accessToken) {
     });
 }
 
-// ฟังก์ชันโหลดคำจาก Google Sheets ตามหมวดหมู่
-function loadButtons(category) {
-    const buttonContainer = document.getElementById("button-container");
-    buttonContainer.innerHTML = '';  // เคลียร์ปุ่มเดิม
-
-    const categoryButtons = buttonsByCategory[category];
-    if (categoryButtons && categoryButtons.length > 0) {
-        categoryButtons.forEach(function(word) {
-            let button = document.createElement("button");
-            button.className = "px-4 py-2 bg-blue-500 text-white rounded-lg transition-all duration-300 hover:bg-blue-600";
-            button.innerText = word;
-            button.onclick = () => speakText(word);
-            buttonContainer.appendChild(button);
-        });
-    } else {
-        console.log(`ไม่พบคำในหมวดหมู่ ${category}`);
-    }
-}
-
-// ฟังก์ชันตรวจสอบการ Login
+// Function to handle authentication
 function authenticate() {
     const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=${SCOPES}`;
     window.location.href = authUrl;
 }
 
-// ฟังก์ชันจัดการ Token
+// Function to handle the authentication response
 function handleAuthResponse() {
     const params = new URLSearchParams(window.location.hash.substring(1));
-    accessToken = params.get('access_token');  // เก็บ access token ที่ได้รับ
+    accessToken = params.get('access_token');
     if (accessToken) {
         console.log("Access Token:", accessToken);
         loadButtonsFromSheet(accessToken);
@@ -184,7 +158,7 @@ function handleAuthResponse() {
     }
 }
 
-// โหลดข้อมูลเมื่อเริ่มหน้าเว็บ
+// Function to initialize the page
 document.addEventListener('DOMContentLoaded', function() {
     if (window.location.hash.includes('access_token')) {
         handleAuthResponse();
@@ -192,7 +166,6 @@ document.addEventListener('DOMContentLoaded', function() {
         authenticate();
     }
 
-    // ตรวจสอบว่ามี accessToken หรือไม่
     if (accessToken) {
         loadButtonsFromSheet(accessToken);
     } else {
@@ -200,13 +173,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// ฟังก์ชันสำหรับเลือกหมวดหมู่
+// Function to switch categories
 function setCategory(category) {
     currentCategory = category;
     loadButtons(category);
 }
 
-// ฟังก์ชันเปิด Modal ผสมคำ
+// Function to open mix words modal
 function openMixModal() {
     const allWords = [];
     for (const category in buttonsByCategory) {
@@ -264,12 +237,12 @@ function openMixModal() {
     document.getElementById('mix-modal').classList.remove('hidden');
 }
 
-// ฟังก์ชันปิด Modal ผสมคำ
+// Function to close mix words modal
 function closeMixModal() {
     document.getElementById('mix-modal').classList.add('hidden');
 }
 
-// ฟังก์ชันผสมคำ
+// Function to mix selected words
 function mixWords() {
     const word1 = document.getElementById('word1').value;
     const word2 = document.getElementById('word2').value;
@@ -282,15 +255,12 @@ function mixWords() {
         alert("กรุณาเลือกคำอย่างน้อย 2 คำ");
         return;
     }
-    
-    // รวมเฉพาะคำที่ถูกเลือก
+   
     const mixedWordsArray = [word1, word2, word3, word4, word5, word6].filter(w => w);
     const mixedWord = mixedWordsArray.join(" ");
 
-    // แสดงผลลัพธ์ที่ผสม
     document.getElementById('mix-result').innerHTML = `
         <h1 class="text-2xl font-bold mt-4">${mixedWord}</h1>
         <button onclick="speakMixedWord('${mixedWord}')" class="mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-300">พูด</button>
     `;
-
-    // 🔹 บันทึกคที่ผสมลง Google Sheets (sheet "storage")
+}
