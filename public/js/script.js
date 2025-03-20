@@ -242,7 +242,6 @@ function closeMixModal() {
     document.getElementById('mix-modal').classList.add('hidden');
 }
 
-// Function to mix selected words
 function mixWords() {
     const word1 = document.getElementById('word1').value;
     const word2 = document.getElementById('word2').value;
@@ -255,12 +254,37 @@ function mixWords() {
         alert("กรุณาเลือกคำอย่างน้อย 2 คำ");
         return;
     }
-   
+    
+    // รวมเฉพาะคำที่ถูกเลือก
     const mixedWordsArray = [word1, word2, word3, word4, word5, word6].filter(w => w);
     const mixedWord = mixedWordsArray.join(" ");
 
+    // แสดงผลลัพธ์ที่ผสม
     document.getElementById('mix-result').innerHTML = `
         <h1 class="text-2xl font-bold mt-4">${mixedWord}</h1>
         <button onclick="speakMixedWord('${mixedWord}')" class="mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-300">พูด</button>
     `;
+
+    // ส่งคำผสมไปยัง Google Sheets (หมวดหมู่ที่เลือก)
+    const categorySheet = currentCategory === "ทั่วไป" ? "common" : "need";  // เลือก sheet ตามหมวดหมู่
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${categorySheet}!A:A:append?valueInputOption=RAW&key=${API_KEY}`;
+    
+    fetch(url, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            values: [[mixedWord]]  // ส่งคำผสมในรูปแบบ array
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("คำผสมถูกเพิ่มแล้ว:", data);
+    })
+    .catch(error => {
+        console.error("ไม่สามารถเพิ่มคำผสมไปยัง Google Sheets:", error);
+        alert("ไม่สามารถเพิ่มคำผสมไปยัง Google Sheets ได้");
+    });
 }
