@@ -57,10 +57,7 @@
     <div id="mix-modal" class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center hidden">
         <div class="bg-white p-6 rounded-lg shadow-lg w-11/12 sm:w-1/3">
             <h3 class="text-xl mb-4">ผสมคำ</h3>
-            <!-- This container will hold the dynamic buttons -->
-            <div id="word-buttons-container" class="mb-4">
-                <!-- Word buttons will be injected here -->
-            </div>
+            <div id="word-buttons-container" class="mb-4"></div>
             <div class="flex justify-between">
                 <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-all duration-300" onclick="mixWords()">ผสม</button>
                 <button class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-all duration-300" onclick="closeMixModal()">ยกเลิก</button>
@@ -68,13 +65,16 @@
         </div>
     </div>
 
-    <script src="js/script.js"></script>
-</body>
-
+    <!-- Footer ที่ถูกย้ายมาภายใน <body> -->
     <footer>
         <div class="flex justify-center space-x-4">
             <button id="btn-add" class="px-4 py-2 bg-green-500 text-white rounded-lg transition-all duration-300 hover:bg-green-600 font-medium" onclick="openModal()">เพิ่มคำ</button>
             <button id="btn-mix" class="px-4 py-2 bg-purple-500 text-white rounded-lg transition-all duration-300 hover:bg-purple-600 font-medium" onclick="openMixModal()">ผสมคำ</button>
         </div>
     </footer>
+
+    <!-- เชื่อมโยงไฟล์ script.js -->
+    <script src="js/script.js"></script>
+
+</body>
 </html>
