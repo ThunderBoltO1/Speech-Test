@@ -10,6 +10,21 @@ let buttonsByCategory = {};
 let currentCategory = "ทั่วไป";  
 let selectedWords = [];  
 
+// ฟังก์ชันเปิดโมดัลเพิ่มคำ
+function openModal() {
+    const modal = document.getElementById('modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    } else {
+        console.error("ไม่พบ modal ใน HTML");
+    }
+}
+
+// ฟังก์ชันปิดโมดัลเพิ่มคำ
+function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
+}
+
 // ตรวจสอบ Token และโหลดข้อมูล
 function checkAuthAndLoadData() {
     if (!accessToken) {
