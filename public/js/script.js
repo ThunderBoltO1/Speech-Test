@@ -62,6 +62,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// ฟังก์ชันตั้งค่าหมวดหมู่
+function setCategory(category) {
+    currentCategory = category;
+    loadWordsForMixing(); // โหลดข้อมูลคำใหม่ตามหมวดหมู่ที่เลือก
+}
+
 // ฟังก์ชันโหลดข้อมูลจาก Google Sheets
 function loadWordsForMixing() {
     const wordButtonsContainer = document.getElementById('word-buttons-container');
