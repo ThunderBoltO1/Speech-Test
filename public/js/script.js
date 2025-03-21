@@ -6,13 +6,11 @@ const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const API_KEY = 'AIzaSyCugN1kot7Nij2PWhKsP08I6yeHNgsYrQI';
 
 let accessToken = '';  // Store access token
-
-// Global variable
 let buttonsByCategory = {};
 let currentCategory = "ทั่วไป";  // Default category
 let selectedWords = [];  // Array to hold selected words for mixing
 
-// Function to speak mixed words
+// ฟังก์ชันพูดคำที่ผสม
 function speakMixedWord(text) {
     if (responsiveVoice) {
         responsiveVoice.speak(text, "Thai Male");
@@ -21,75 +19,44 @@ function speakMixedWord(text) {
     }
 }
 
-// Function to open modal for adding a new word
-function openModal() {
-    document.getElementById('buttonText').value = '';
-    document.getElementById('modal').classList.remove('hidden');
+// ฟังก์ชันเปลี่ยนหมวดหมู่
+function setCategory(category) {
+    currentCategory = category;
+    loadWordsForMixing();
+    changeBackgroundColor(category);
 }
 
-// Function to close modal
-function closeModal() {
-    document.getElementById('modal').classList.add('hidden');
-}
-
-function addButton() {
-    const newButtonText = document.getElementById('buttonText').value.trim();
-    if (newButtonText === "") {
-        alert("กรุณากรอกข้อความ");
-        return;
+// ฟังก์ชันเปลี่ยนสีพื้นหลังตามหมวดหมู่
+function changeBackgroundColor(category) {
+    const body = document.body;
+    switch (category) {
+        case "ทั่วไป":
+            body.style.backgroundColor = "#f0f4f8";
+            break;
+        case "ความต้องการ":
+            body.style.backgroundColor = "#fffbf0";
+            break;
+        case "คลัง":
+            body.style.backgroundColor = "#f0f8f0";
+            break;
+        default:
+            body.style.backgroundColor = "#ffffff";
+            break;
     }
-
-    // Add the new word to the selected category
-    if (!buttonsByCategory[currentCategory]) {
-        buttonsByCategory[currentCategory] = [];
-    }
-    buttonsByCategory[currentCategory].push(newButtonText);
-
-    // Update the button list
-    setCategory(currentCategory);
-
-    // Determine the sheet name based on the selected category
-    const categorySheet = currentCategory === "ทั่วไป" ? "common" :
-                          currentCategory === "ความต้องการ" ? "need" :
-                          currentCategory === "คลัง" ? "storage" : "common";
-
-    // API URL for adding a new word to Google Sheets based on the category
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${categorySheet}!A:A:append?valueInputOption=RAW&key=${API_KEY}`;
-    
-    fetch(url, {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            values: [[newButtonText]]  // Send the new word as an array
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log("คำใหม่ถูกเพิ่มแล้ว:", data);
-    })
-    .catch(error => {
-        console.error("ไม่สามารถเพิ่มคำไปยัง Google Sheets:", error);
-        alert("ไม่สามารถเพิ่มคำไปยัง Google Sheets ได้");
-    });
-
-    closeModal();
 }
 
-// Function to load words for mixing from the selected category
+// ฟังก์ชันดึงข้อมูลจาก Google Sheets และแสดงเป็นปุ่ม
 function loadWordsForMixing() {
     const wordButtonsContainer = document.getElementById('word-buttons-container');
     if (!wordButtonsContainer) {
-        console.error('word-buttons-container not found!');
+        console.error('ไม่พบ container สำหรับปุ่มคำ!');
         return;
     }
 
-    // Clear any previous buttons before adding new ones
+    // ล้างปุ่มเก่าก่อนโหลดใหม่
     wordButtonsContainer.innerHTML = '';
 
-    // Fetch words for the current category from Google Sheets
+    // เลือก sheet ตามหมวดหมู่
     const categorySheet = currentCategory === "ทั่วไป" ? "common" :
                           currentCategory === "ความต้องการ" ? "need" :
                           currentCategory === "คลัง" ? "storage" : "common";
@@ -98,20 +65,19 @@ function loadWordsForMixing() {
     
     fetch(url, {
         method: "GET",
-        headers: {
-            "Authorization": `Bearer ${accessToken}`,
-        }
+        headers: { "Authorization": `Bearer ${accessToken}` }
     })
     .then(response => response.json())
     .then(data => {
-        const categoryWords = data.values?.map(row => row[0]) || [];
+        const words = data.values?.map(row => row[0]) || [];
+        buttonsByCategory[currentCategory] = words;
 
-        if (categoryWords.length > 0) {
-            categoryWords.forEach(function(word) {
+        if (words.length > 0) {
+            words.forEach(word => {
                 let button = document.createElement("button");
-                button.className = "px-4 py-2 bg-blue-500 text-white rounded-lg transition-all duration-300 hover:bg-blue-600";
+                button.className = "px-4 py-2 bg-blue-500 text-white rounded-lg transition-all duration-300 hover:bg-blue-600 m-1";
                 button.innerText = word;
-                button.onclick = () => selectWordForMixing(word);  // Use this function for word selection
+                button.onclick = () => selectWordForMixing(word);
                 wordButtonsContainer.appendChild(button);
             });
         } else {
@@ -119,23 +85,23 @@ function loadWordsForMixing() {
         }
     })
     .catch(error => {
-        console.error("ไม่สามารถดึงข้อมูลจาก Google Sheets:", error);
-        alert("ไม่สามารถดึงข้อมูลจาก Google Sheets ได้");
+        console.error("ไม่สามารถโหลดข้อมูลจาก Google Sheets:", error);
+        alert("ไม่สามารถโหลดข้อมูลจาก Google Sheets ได้");
     });
 }
 
-// Function for selecting words for mixing
+// ฟังก์ชันเลือกคำ
 function selectWordForMixing(word) {
     if (selectedWords.includes(word)) {
-        selectedWords = selectedWords.filter(w => w !== word); // Remove word if already selected
+        selectedWords = selectedWords.filter(w => w !== word);
     } else {
-        selectedWords.push(word); // Add word to selectedWords array
+        selectedWords.push(word);
     }
 
-    console.log("Selected Words:", selectedWords);
+    console.log("คำที่เลือก:", selectedWords);
 }
 
-// Function to mix selected words
+// ฟังก์ชันผสมคำ
 function mixWords() {
     if (selectedWords.length < 2) {
         alert("กรุณาเลือกคำอย่างน้อย 2 คำ");
@@ -144,14 +110,15 @@ function mixWords() {
 
     const mixedWord = selectedWords.join(" ");
 
-    // Display the mixed words
+    // แสดงคำที่ผสม
     document.getElementById('mix-result').innerHTML = `
         <h1 class="text-2xl font-bold mt-4">${mixedWord}</h1>
         <button onclick="speakMixedWord('${mixedWord}')" class="mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-300">พูด</button>
     `;
 
-    // Send the mixed words to Google Sheets (based on the selected category)
-    const categorySheet = currentCategory === "คลัง" ? "storage" : currentCategory === "ความต้องการ" ? "need" : "storage"; 
+    // บันทึกคำผสมไปยัง Google Sheets
+    const categorySheet = currentCategory === "คลัง" ? "storage" :
+                          currentCategory === "ความต้องการ" ? "need" : "storage";
 
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${categorySheet}!A:A:append?valueInputOption=RAW&key=${API_KEY}`;
     
@@ -162,7 +129,7 @@ function mixWords() {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            values: [[mixedWord]]  // Send the mixed word as an array
+            values: [[mixedWord]]
         })
     })
     .then(response => response.json())
@@ -174,36 +141,10 @@ function mixWords() {
         alert("ไม่สามารถเพิ่มคำผสมไปยัง Google Sheets ได้");
     });
 
-    closeMixModal();  // Close the modal after mixing words
+    closeMixModal();
 }
 
-// Function to close the mix words modal
+// ฟังก์ชันปิดโมดัล
 function closeMixModal() {
     document.getElementById('mix-modal').classList.add('hidden');
-}
-
-// Function to handle category change and update the background color
-function setCategory(category) {
-    currentCategory = category;
-    loadWordsForMixing();
-    changeBackgroundColor(category);
-}
-
-// Function to change background color based on category
-function changeBackgroundColor(category) {
-    const body = document.body;
-    switch (category) {
-        case "ทั่วไป":
-            body.style.backgroundColor = "#f0f4f8"; // Light blue for "ทั่วไป"
-            break;
-        case "ความต้องการ":
-            body.style.backgroundColor = "#fffbf0"; // Light yellow for "ความต้องการ"
-            break;
-        case "คลัง":
-            body.style.backgroundColor = "#f0f8f0"; // Light green for "คลัง"
-            break;
-        default:
-            body.style.backgroundColor = "#ffffff"; // White background as default
-            break;
-    }
 }
