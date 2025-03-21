@@ -1,0 +1,9 @@
+[build]
+  publish = "public"  # ตั้งค่าให้เผยแพร่จากโฟลเดอร์ public
+  command = ""  # ไม่จำเป็นต้องใช้คำสั่ง build ถ้าไม่ต้องการ build
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = true
