@@ -33,7 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('btn-add').addEventListener('click', openModal);
     document.getElementById('btn-mix').addEventListener('click', toggleMixingMode);
-    document.getElementById('btn-delete').addEventListener('click', toggleDeleteMode);
+    document.getElementById('btn-save-mix').addEventListener('click', saveMixedWords);
+    document.getElementById('btn-delete').addEventListener('click', deleteSelectedWord);
     
     handleAuthResponse();
 });
@@ -174,32 +175,24 @@ function updateSelectionUI() {
     }
 }
 
-function updateMixResult() {
+function updateMixResult(text = '') {
     if (elements.mixResult) {
-        elements.mixResult.textContent = selectedWords.join(' ') || 'ยังไม่ได้เลือกคำ';
+        elements.mixResult.textContent = text || selectedWords.join(' ') || 'ยังไม่ได้เลือกคำ';
     }
 }
 
 // Speech Functions
 function speakText(text) {
-    responsiveVoice.speak(text, "Thai Male", {
-        onstart: () => highlightSpeakingButton(text),
-        onend: () => removeSpeakingHighlight()
-    });
-}
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'th-TH'; // ตั้งค่าภาษาเป็นไทย
+        window.speechSynthesis.speak(utterance);
 
-function highlightSpeakingButton(text) {
-    document.querySelectorAll('.word-button').forEach(button => {
-        if (button.textContent.trim() === text) {
-            button.classList.add('ring-4', 'ring-blue-300');
-        }
-    });
-}
-
-function removeSpeakingHighlight() {
-    document.querySelectorAll('.word-button').forEach(button => {
-        button.classList.remove('ring-4', 'ring-blue-300');
-    });
+        // แสดงข้อความที่พูดบน mix-result
+        updateMixResult(text);
+    } else {
+        showError('เบราว์เซอร์ของคุณไม่รองรับการแปลงข้อความเป็นเสียง');
+    }
 }
 
 // Modal Functions
@@ -222,18 +215,6 @@ function toggleMixingMode() {
         selectedWords = [];
         updateSelectionUI();
         updateMixResult();
-    }
-
-    // อัปเดตปุ่มคำศัพท์
-    loadCategoryData();
-}
-
-function toggleDeleteMode() {
-    isSelectMode = !isSelectMode;
-    updateMixingUI();
-    
-    if (!isSelectMode) {
-        deleteSelectedWord();
     }
 
     // อัปเดตปุ่มคำศัพท์
@@ -348,6 +329,26 @@ async function addWordToSheet(word, category) {
             return;
         }
         throw new Error(`ไม่สามารถบันทึกข้อมูลได้: ${response.statusText}`);
+    }
+}
+
+// Save Mixed Words
+async function saveMixedWords() {
+    if (selectedWords.length === 0) {
+        showError('ไม่มีคำที่เลือกไว้');
+        return;
+    }
+
+    const mixedText = selectedWords.join(' ');
+    try {
+        await addWordToSheet(mixedText, 'คลัง'); // บันทึกคำผสมลงใน Sheet3
+        showToast('บันทึกคำผสมสำเร็จ!');
+        selectedWords = []; // เคลียร์คำที่เลือก
+        updateSelectionUI();
+        updateMixResult();
+    } catch (error) {
+        showError('เกิดข้อผิดพลาดในการบันทึกคำผสม: ' + error.message);
+        console.error('Error saving mixed words:', error);
     }
 }
 
