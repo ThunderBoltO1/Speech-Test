@@ -1,5 +1,5 @@
 // OAuth2
-const CLIENT_ID = '271962080875-khc6aslq3phrnm9cqgguk37j0funtr7f.apps.googleusercontent.com';
+const CLIENT_ID = '271962080875-dr9uild15rad3n86816nmfq5ms7mj95o.apps.googleusercontent.com';
 const REDIRECT_URI = 'speech-test-nine.vercel.app';
 const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8";
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
