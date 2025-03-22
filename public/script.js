@@ -26,23 +26,12 @@ function closeModal() {
     document.getElementById('modal').classList.add('hidden');
 }
 
-// ตรวจสอบ Token และโหลดข้อมูล
-function checkAuthAndLoadData() {
-    // ตรวจสอบว่า token ยังไม่หมดอายุ
-    if (!accessToken || (tokenExpiry && new Date() > tokenExpiry)) {
-        showError("Token หมดอายุหรือไม่มี โปรดยืนยันตัวตนใหม่");
-        authenticate();
-        return;
-    }
-    loadWordsForMixing();
-}
-
 // แสดงข้อความผิดพลาด
 function showError(message) {
     console.error(message);
-    // สร้าง toast notification หรือแสดง error message ที่เป็นมิตรกับผู้ใช้
+    // สร้าง toast notification แสดง error message ที่เป็นมิตรกับผู้ใช้
     const errorElement = document.createElement("div");
-    errorElement.className = "fixed top-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg";
+    errorElement.className = "fixed top-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg z-50";
     errorElement.textContent = message;
     document.body.appendChild(errorElement);
     
@@ -52,76 +41,56 @@ function showError(message) {
     }, 5000);
 }
 
+// ตรวจสอบ Token และโหลดข้อมูล
+function checkAuthAndLoadData() {
+    // ตรวจสอบว่า token ยังไม่หมดอายุ
+    if (!accessToken || (tokenExpiry && new Date() > tokenExpiry)) {
+        console.log("Token หมดอายุหรือไม่มี โปรดยืนยันตัวตนใหม่");
+        authenticate();
+        return;
+    }
+    loadWordsForMixing();
+}
+
 function authenticate() {
-    // ใช้ 'code' แทน 'token' เพื่อใช้ Authorization Code flow
-    // สร้าง PKCE challenge (ถ้าจำเป็น)
+    // ใช้ Implicit flow ซึ่งทำงานได้โดยไม่ต้องมี backend
     const state = Math.random().toString(36).substring(2);
     localStorage.setItem('oauth_state', state);
     
-    const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(SCOPES)}&state=${state}&access_type=offline&prompt=consent`;
+    const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=${encodeURIComponent(SCOPES)}&state=${state}`;
     window.location.href = authUrl;
-}
-
-// ฟังก์ชันแลกรับ token ด้วย authorization code
-function exchangeCodeForToken(code) {
-    // นี่ควรจะทำที่ backend เพื่อปกป้อง client_secret
-    // แต่สำหรับตัวอย่างนี้ จะจำลองผ่าน proxy API
-    const tokenUrl = 'https://your-backend-endpoint/exchange-token'; // ควรสร้าง backend endpoint
-    
-    fetch(tokenUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: code, redirect_uri: REDIRECT_URI })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.access_token) {
-            accessToken = data.access_token;
-            // คำนวณเวลาหมดอายุจาก expires_in (จำนวนวินาที)
-            tokenExpiry = new Date(new Date().getTime() + data.expires_in * 1000);
-            localStorage.setItem('access_token', accessToken);
-            localStorage.setItem('token_expiry', tokenExpiry.toISOString());
-            
-            console.log("ได้รับ Access Token แล้ว");
-            checkAuthAndLoadData();
-        } else {
-            showError("การรับ Access Token ล้มเหลว");
-        }
-    })
-    .catch(error => {
-        showError("เกิดข้อผิดพลาดในการแลก Token: " + error.message);
-    });
 }
 
 // ฟังก์ชันจัดการ URL parameters หลังจาก redirect กลับมา
 function handleAuthResponse() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    const state = urlParams.get('state');
-    const storedState = localStorage.getItem('oauth_state');
-    
-    // ลบ state จาก localStorage
-    localStorage.removeItem('oauth_state');
-    
-    // ตรวจสอบ state เพื่อป้องกัน CSRF
-    if (state !== storedState) {
-        showError("การตรวจสอบ State ล้มเหลว กรุณาลองใหม่");
-        authenticate();
-        return;
-    }
-    
-    if (code) {
-        exchangeCodeForToken(code);
-    } else if (window.location.hash.includes('access_token')) {
-        // สำหรับ backward compatibility กับ Implicit flow เดิม
+    // ตรวจสอบ hash fragment (สำหรับ Implicit flow)
+    if (window.location.hash) {
         const params = new URLSearchParams(window.location.hash.substring(1));
         accessToken = params.get('access_token');
         const expiresIn = params.get('expires_in');
+        const state = params.get('state');
+        const storedState = localStorage.getItem('oauth_state');
+        
+        // ลบ state จาก localStorage
+        localStorage.removeItem('oauth_state');
+        
+        // ตรวจสอบ state เพื่อป้องกัน CSRF
+        if (state && storedState && state !== storedState) {
+            showError("การตรวจสอบ State ล้มเหลว กรุณาลองใหม่");
+            authenticate();
+            return;
+        }
         
         if (accessToken) {
-            tokenExpiry = new Date(new Date().getTime() + expiresIn * 1000);
+            // คำนวณเวลาหมดอายุจาก expires_in (จำนวนวินาที)
+            tokenExpiry = new Date(new Date().getTime() + parseInt(expiresIn) * 1000);
             localStorage.setItem('access_token', accessToken);
             localStorage.setItem('token_expiry', tokenExpiry.toISOString());
+            
+            // ล้าง URL hash เพื่อไม่ให้ token แสดงบน URL
+            window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+            
+            console.log("ได้รับ Access Token แล้ว");
             checkAuthAndLoadData();
         } else {
             showError("การยืนยันตัวตนล้มเหลว กรุณาลองใหม่");
@@ -143,14 +112,14 @@ function handleAuthResponse() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    handleAuthResponse();
-    
     // เพิ่ม event listeners สำหรับปุ่มหมวดหมู่
     document.querySelectorAll('.category-button').forEach(button => {
         button.addEventListener('click', function() {
             setCategory(this.dataset.category);
         });
     });
+    
+    handleAuthResponse();
 });
 
 // ฟังก์ชันตั้งค่าหมวดหมู่
@@ -205,6 +174,9 @@ function loadWordsForMixing() {
         if (!response.ok) {
             if (response.status === 401) {
                 showError("Token หมดอายุ! โปรดยืนยันตัวตนใหม่");
+                // ลบ token ที่หมดอายุ
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('token_expiry');
                 authenticate();
                 return null;
             }
@@ -279,7 +251,7 @@ function updateSelectedWordsDisplay() {
     if (selectedWordsContainer) {
         if (selectedWords.length > 0) {
             selectedWordsContainer.innerHTML = selectedWords.map(word => 
-                `<span class="inline-block bg-green-500 text-white px-3 py-1 rounded-full m-1">${word} <button class="ml-1 text-white font-bold" onclick="removeSelectedWord('${word}')">×</button></span>`
+                `<span class="inline-block bg-green-500 text-white px-3 py-1 rounded-full m-1">${word} <button class="ml-1 text-white font-bold" onclick="removeSelectedWord('${word.replace(/'/g, "\\'")}')">×</button></span>`
             ).join('');
         } else {
             selectedWordsContainer.innerHTML = '<span class="text-gray-500">ยังไม่ได้เลือกคำ</span>';
@@ -311,13 +283,10 @@ function openMixModal() {
     if (modal) {
         modal.classList.remove('hidden');
         
-        // ล้างการเลือกคำเมื่อเปิดโมดัลใหม่
-        selectedWords = [];
-        updateSelectedWordsDisplay();
-        
-        // ไม่จำเป็นต้องเรียก loadWordsForMixing ใหม่ เพราะจะถูกเรียกเมื่อเปลี่ยนหมวดหมู่อยู่แล้ว
-        // แต่ทำการเรียกเพื่อโหลดข้อมูลเริ่มต้น
-        loadWordsForMixing();
+        // ตรวจสอบว่าเคยโหลดข้อมูลในหมวดหมู่นี้แล้วหรือไม่
+        if (!buttonsByCategory[currentCategory]) {
+            loadWordsForMixing();
+        }
     } else {
         showError("ไม่พบ mix-modal ใน HTML");
     }
@@ -325,9 +294,13 @@ function openMixModal() {
 
 // ฟังก์ชันปิดโมดัล
 function closeMixModal() {
-    document.getElementById('mix-modal').classList.add('hidden');
+    const modal = document.getElementById('mix-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
     // เคลียร์คำที่เลือกเมื่อปิดโมดัล
     selectedWords = [];
+    updateSelectedWordsDisplay();
 }
 
 // ฟังก์ชันสำหรับการประมวลผลคำที่เลือกและส่งออก
