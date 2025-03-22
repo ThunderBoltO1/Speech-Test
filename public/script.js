@@ -1,6 +1,6 @@
 // OAuth2
 const CLIENT_ID = '271962080875-dr9uild15rad3n86816nmfq5ms7mj95o.apps.googleusercontent.com';
-const REDIRECT_URI = 'speech-test-nine.vercel.app';
+const REDIRECT_URI = 'https://speech-test-nine.vercel.app';
 const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8";
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const API_KEY = 'AIzaSyCugN1kot7Nij2PWhKsP08I6yeHNgsYrQI';
@@ -35,9 +35,9 @@ function checkAuthAndLoadData() {
     loadWordsForMixing();
 }
 
-// ฟังก์ชันยืนยันตัวตน
+
 function authenticate() {
-    const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=${SCOPES}`;
+    const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=${encodeURIComponent(SCOPES)}`;
     window.location.href = authUrl;
 }
 
