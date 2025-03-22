@@ -2,79 +2,88 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <title>Speech Test</title>
-    <script src="https://code.responsivevoice.org/responsivevoice.js?key=YL7PkzaR"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech Communication Aid</title>
+    
+    <!-- Tailwind CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- ResponsiveVoice -->
+    <script src="https://code.responsivevoice.org/responsivevoice.js?key=YL7PkzaR"></script>
+    
     <style>
         body {
-            font-family: "IBM Plex Sans Thai", sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            background-color: #f4f4f4;
+            font-family: 'IBM Plex Sans Thai', sans-serif;
+        }
+        .word-button {
+            transition: all 0.2s ease;
+        }
+        .speaking {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5);
         }
     </style>
 </head>
+<body class="bg-gray-100">
 
-<body>
+    <!-- Header -->
+    <header class="bg-blue-600 text-white py-4 shadow-lg">
+        <h1 class="text-2xl font-bold text-center">ระบบสื่อสารด้วยเสียง</h1>
+        <div id="mix-result" class="text-center mt-2 bg-blue-700 p-2 rounded-lg mx-4"></div>
+    </header>
 
-    <!-- Mix -->
-    <div class="bg-blue-500 text-white text-center p-4">
-        <h1>
-            <div id="mix-result" class="text-center mt-6 bg-green-500"></div></h1>
-    </div>
-
-    <div class="w-full bg-white shadow-md p-4">
-        <nav class="flex justify-center space-x-4 mb-4">
-            <button id="nav-common" class="nav-link active px-4 py-2 rounded-lg transition-all duration-300 hover:bg-blue-500 hover:text-white font-medium text-gray-700 category-button" data-category="ทั่วไป" onclick="setCategory('ทั่วไป')">ทั่วไป</button>
-            <button id="nav-need" class="nav-link px-4 py-2 rounded-lg transition-all duration-300 hover:bg-blue-500 hover:text-white font-medium text-gray-700 category-button" data-category="ความต้องการ" onclick="setCategory('ความต้องการ')">ความต้องการ</button>
-            <button id="nav-fav" class="nav-link px-4 py-2 rounded-lg transition-all duration-300 hover:bg-blue-500 hover:text-white font-medium text-gray-700 category-button" data-category="คลัง" onclick="setCategory('คลัง')">คลัง</button>
-        </nav>
-    </div>
-
-    <!-- Content -->
-    <div class="flex-1 p-4">
-        <div id="button-container" class="grid grid-flow-row-dense grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
-    </div>
-
-    <!-- Modal เพิ่มปุ่มใหม่ -->
-    <div id="modal" class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center hidden">
-        <div class="bg-white p-6 rounded-lg shadow-lg w-11/12 sm:w-1/3">
-            <h3 class="text-xl mb-4">เพิ่มข้อความ</h3>
-            <input type="text" id="buttonText" class="border p-2 w-full mb-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="กรุณากรอกข้อความ">
-            <div class="flex justify-between">
-                <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-all duration-300" onclick="addButton()">เพิ่ม</button>
-                <button class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-all duration-300" onclick="closeModal()">ยกเลิก</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal ผสมคำ -->
-    <div id="mix-modal" class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center hidden">
-        <div class="bg-white p-6 rounded-lg shadow-lg w-11/12 sm:w-1/3">
-            <h3 class="text-xl mb-4">ผสมคำ</h3>
-            <div id="word-buttons-container" class="mb-4"></div>
-            <div class="flex justify-between">
-                <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-all duration-300" onclick="mixWords()">ผสม</button>
-                <button class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-all duration-300" onclick="closeMixModal()">ยกเลิก</button>
-            </div>
-        </div>
-    </div>
-
-    
-    <footer>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md py-4">
         <div class="flex justify-center space-x-4">
-            <button id="btn-add" class="px-4 py-2 bg-green-500 text-white rounded-lg transition-all duration-300 hover:bg-green-600 font-medium" onclick="openModal()">เพิ่มคำ</button>
-            <button id="btn-mix" class="px-4 py-2 bg-purple-500 text-white rounded-lg transition-all duration-300 hover:bg-purple-600 font-medium" onclick="openMixModal()">ผสมคำ</button>
+            <button data-category="ทั่วไป" class="category-button px-4 py-2 rounded-lg bg-blue-100 text-blue-800 hover:bg-blue-200 transition-all">ทั่วไป</button>
+            <button data-category="ความต้องการ" class="category-button px-4 py-2 rounded-lg bg-green-100 text-green-800 hover:bg-green-200 transition-all">ความต้องการ</button>
+            <button data-category="คลัง" class="category-button px-4 py-2 rounded-lg bg-purple-100 text-purple-800 hover:bg-purple-200 transition-all">คลัง</button>
         </div>
-    </footer>
+    </nav>
 
-    
+    <!-- Main Content -->
+    <main class="flex-1 p-4">
+        <div id="button-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+    </main>
+
+    <!-- Modals -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg p-6 w-11/12 max-w-md">
+            <h3 class="text-xl font-bold mb-4">เพิ่มคำใหม่</h3>
+            <input type="text" id="new-word-input" class="w-full p-2 border rounded mb-4" placeholder="พิมพ์คำศัพท์ที่นี่">
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeModal()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">ยกเลิก</button>
+                <button onclick="addNewWord()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mix-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg p-6 w-11/12 max-w-md">
+            <h3 class="text-xl font-bold mb-4">ผสมคำ</h3>
+            <div id="word-buttons-container" class="flex flex-wrap gap-2 mb-4"></div>
+            <div id="selected-words-container" class="bg-gray-50 p-3 rounded-lg mb-4 min-h-[50px]"></div>
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeMixModal()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">ยกเลิก</button>
+                <button onclick="mixWords()" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">ผสมคำ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Buttons -->
+    <div class="fixed bottom-4 right-4 flex space-x-3">
+        <button id="btn-add" class="px-6 py-3 bg-green-500 text-white rounded-full shadow-lg hover:bg-green-600 transition-all">
+            ➕ เพิ่มคำ
+        </button>
+        <button id="btn-mix" class="px-6 py-3 bg-purple-500 text-white rounded-full shadow-lg hover:bg-purple-600 transition-all">
+            🔀 ผสมคำ
+        </button>
+    </div>
+
+    <!-- Script -->
     <script src="script.js"></script>
-
 </body>
 </html>
