@@ -108,26 +108,47 @@ async function loadCategoryData() {
     const sheetName = CATEGORY_SHEETS[currentCategory];
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=COLUMNS`;
     
-    const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-    });
-    
-    const data = await response.json();
-    renderButtons(data.values?.[0] || []);
+    try {
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                // Token หมดอายุหรือไม่ถูกต้อง
+                showError('การยืนยันตัวตนล้มเหลว กรุณาล็อกอินใหม่');
+                authenticate();
+                return;
+            }
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (!data.values) {
+            throw new Error('ไม่มีข้อมูลใน Google Sheets');
+        }
+        
+        renderButtons(data.values[0]); // แสดงข้อมูลใน UI
+    } catch (error) {
+        console.error('Error loading category data:', error);
+        showError('ไม่สามารถโหลดข้อมูลได้: ' + error.message);
+    }
 }
 
 function renderButtons(words = []) {
-    elements.buttonContainer.innerHTML = words.map(word => `
-        <div class="flex items-center justify-between bg-blue-500 text-white px-4 py-2 rounded m-2">
-            <button class="flex-1 text-left"
-                    onclick="${isMixingMode ? `toggleWordSelection('${word}')` : `speakText('${word}')`}">
-                ${word}
-            </button>
-            <button onclick="deleteWord('${word}')" class="ml-2 text-red-300 hover:text-red-100">
-                🗑️
-            </button>
-        </div>
-    `).join('');
+    if (elements.buttonContainer) {
+        elements.buttonContainer.innerHTML = words.map(word => `
+            <div class="flex items-center justify-between bg-blue-500 text-white px-4 py-2 rounded m-2">
+                <button class="flex-1 text-left"
+                        onclick="${isMixingMode ? `toggleWordSelection('${word}')` : `speakText('${word}')`}">
+                    ${word}
+                </button>
+                <button onclick="deleteWord('${word}')" class="ml-2 text-red-300 hover:text-red-100">
+                    🗑️
+                </button>
+            </div>
+        `).join('');
+    }
 }
 
 // UI Functions
@@ -135,7 +156,7 @@ function setCategory(category) {
     currentCategory = category;
     selectedWords = [];
     updateSelectionUI();
-    loadCategoryData();
+    loadCategoryData(); // โหลดข้อมูลใหม่เมื่อเปลี่ยนหมวดหมู่
 }
 
 function toggleWordSelection(word) {
@@ -154,12 +175,14 @@ function toggleWordSelection(word) {
 }
 
 function updateSelectionUI() {
-    elements.selectedWordsContainer.innerHTML = selectedWords.map(word => `
-        <span class="selected-word bg-green-500 text-white px-2 py-1 rounded m-1">
-            ${word}
-            <button class="ml-2 hover:text-gray-200" onclick="toggleWordSelection('${word}')">&times;</button>
-        </span>
-    `).join('');
+    if (elements.selectedWordsContainer) {
+        elements.selectedWordsContainer.innerHTML = selectedWords.map(word => `
+            <span class="selected-word bg-green-500 text-white px-2 py-1 rounded m-1">
+                ${word}
+                <button class="ml-2 hover:text-gray-200" onclick="toggleWordSelection('${word}')">&times;</button>
+            </span>
+        `).join('');
+    }
 }
 
 // Speech Functions
