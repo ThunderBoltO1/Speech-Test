@@ -14,7 +14,7 @@ let accessToken = null;
 let tokenExpiry = null;
 let currentCategory = 'ทั่วไป';
 let selectedWords = [];
-let isSelectMode = false; // เพิ่มตัวแปรนี้
+let isSelectMode = false;
 
 // DOM Elements
 const elements = {
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('btn-add').addEventListener('click', openModal);
     document.getElementById('btn-mix').addEventListener('click', toggleMixingMode);
-    document.getElementById('btn-delete').addEventListener('click', deleteSelectedWord);
+    document.getElementById('btn-delete').addEventListener('click', toggleDeleteMode);
     
     handleAuthResponse();
 });
@@ -174,9 +174,15 @@ function updateSelectionUI() {
     }
 }
 
+function updateMixResult() {
+    if (elements.mixResult) {
+        elements.mixResult.textContent = selectedWords.join(' ') || 'ยังไม่ได้เลือกคำ';
+    }
+}
+
 // Speech Functions
 function speakText(text) {
-    responsiveVoice.speak(text, "Thai Female", {
+    responsiveVoice.speak(text, "Thai Male", {
         onstart: () => highlightSpeakingButton(text),
         onend: () => removeSpeakingHighlight()
     });
@@ -215,6 +221,19 @@ function toggleMixingMode() {
         speakText(mixedText);
         selectedWords = [];
         updateSelectionUI();
+        updateMixResult();
+    }
+
+    // อัปเดตปุ่มคำศัพท์
+    loadCategoryData();
+}
+
+function toggleDeleteMode() {
+    isSelectMode = !isSelectMode;
+    updateMixingUI();
+    
+    if (!isSelectMode) {
+        deleteSelectedWord();
     }
 
     // อัปเดตปุ่มคำศัพท์
