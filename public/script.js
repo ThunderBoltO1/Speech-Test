@@ -22,7 +22,8 @@ const elements = {
     buttonContainer: document.getElementById('button-container'),
     wordButtonsContainer: document.getElementById('word-buttons-container'),
     selectedWordsContainer: document.getElementById('selected-words-container'),
-    mixResult: document.getElementById('mix-result')
+    mixResult: document.getElementById('mix-result'),
+    newWordInput: document.getElementById('new-word-input')
 };
 
 // Event Listeners
@@ -115,7 +116,7 @@ async function loadCategoryData() {
     renderButtons(data.values[0]);
 }
 
-function renderButtons(words) {
+function renderButtons(words = []) {
     elements.buttonContainer.innerHTML = words.map(word => `
         <button class="word-button bg-blue-500 text-white px-4 py-2 rounded m-2 hover:bg-blue-600 transition-all"
                 data-word="${word}"
@@ -136,7 +137,7 @@ async function loadWordsForMixing() {
     renderWordSelectionButtons(data.values[0]);
 }
 
-function renderWordSelectionButtons(words) {
+function renderWordSelectionButtons(words = []) {
     elements.wordButtonsContainer.innerHTML = words.map(word => `
         <button class="word-select-button px-4 py-2 rounded m-1 transition-all 
                     ${selectedWords.includes(word) ? 'bg-green-500' : 'bg-blue-500'} 
@@ -206,6 +207,7 @@ function openModal() {
 
 function closeModal() {
     elements.modal.classList.add('hidden');
+    elements.newWordInput.value = '';
 }
 
 function openMixModal() {
