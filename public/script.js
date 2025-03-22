@@ -139,8 +139,40 @@ function setCategory(category) {
             button.classList.add('bg-blue-500');
         }
     });
-    
-    loadWordsForMixing();
+
+    loadButtonsFromSheet();  // เรียกฟังก์ชันเพื่อโหลดข้อมูลจาก Google Sheets
+    loadWordsForMixing();    // ฟังก์ชันนี้ยังคงถูกเรียกสำหรับโหลดคำจาก Google Sheets
+}
+
+// ฟังก์ชันสำหรับโหลดปุ่มจาก Google Sheets
+function loadButtonsFromSheet() {
+    const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1?key=${API_KEY}`;
+
+    fetch(sheetUrl, {
+        method: "GET",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const buttons = data.values || [];
+        const container = document.getElementById('button-container');
+        
+        // เพิ่มปุ่มที่ดึงมาจาก Google Sheets ลงใน container
+        buttons.forEach(buttonData => {
+            const newButton = document.createElement('button');
+            newButton.textContent = buttonData[0];  // ใช้ข้อความในแถวแรก
+            newButton.classList.add('bg-blue-500', 'text-white', 'px-6', 'py-3', 'rounded', 'text-sm', 'sm:text-base', 'md:text-lg');
+            newButton.onclick = function() {
+                speakText(buttonData[0]);
+            };
+            container.appendChild(newButton);
+        });
+    })
+    .catch(error => {
+        console.error("Error loading buttons from Google Sheets:", error);
+    });
 }
 
 // ฟังก์ชันโหลดข้อมูลจาก Google Sheets
@@ -186,21 +218,8 @@ function loadWordsForMixing() {
         return response.json();
     })
     .then(data => {
-        console.log(data);  // Debugging line to check the data received
-        // Check if the returned range includes the expected sheet name
-        const categorySheet = currentCategory === "ทั่วไป" ? "common" :
-                              currentCategory === "ความต้องการ" ? "need" :
-                              currentCategory === "คลัง" ? "storage" : "common";
-        if (!data || !data.values || !data.range || !data.range.includes(categorySheet)) {
-            showError("Sheet name mismatch or incorrect sheetId. Expected sheet: " + categorySheet);
-            const wordButtonsContainer = document.getElementById('word-buttons-container');
-            if (wordButtonsContainer) {
-                wordButtonsContainer.innerHTML = '<div class="text-center w-full py-4 text-red-500">ไม่พบข้อมูล</div>';
-            }
-            return;
-        }
-        
-        if (!data.values) {
+        console.log(data);  
+        if (!data || !data.values) {
             showError("ไม่มีข้อมูลที่ได้รับจาก Google Sheets");
             wordButtonsContainer.innerHTML = '<div class="text-center w-full py-4 text-red-500">ไม่พบข้อมูล</div>';
             return;
