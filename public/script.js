@@ -190,28 +190,27 @@ function updateMixResult(text = '') {
 
 // Speech Functions
 function speakText(text) {
-    if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'th-TH'; // ตั้งค่าภาษาเป็นไทย
-        utterance.onstart = () => {
-            console.log('เริ่มพูด:', text);
-            highlightSpeakingButton(text);
-        };
-        utterance.onend = () => {
-            console.log('พูดเสร็จสิ้น:', text);
-            removeSpeakingHighlight();
-        };
-        utterance.onerror = (error) => {
-            console.error('เกิดข้อผิดพลาดในการพูด:', error);
-            showError('ไม่สามารถพูดข้อความได้');
-        };
-        window.speechSynthesis.speak(utterance);
+    if (typeof responsiveVoice !== 'undefined') {
+        responsiveVoice.speak(text, "Thai Female", {
+            onstart: () => {
+                console.log('เริ่มพูด:', text);
+                highlightSpeakingButton(text);
+            },
+            onend: () => {
+                console.log('พูดเสร็จสิ้น:', text);
+                removeSpeakingHighlight();
+            },
+            onerror: (error) => {
+                console.error('เกิดข้อผิดพลาดในการพูด:', error);
+                showError('ไม่สามารถพูดข้อความได้');
+            }
+        });
 
         // แสดงข้อความที่พูดบน mix-result
         updateMixResult(text);
     } else {
-        console.error('เบราว์เซอร์ของคุณไม่รองรับการแปลงข้อความเป็นเสียง');
-        showError('เบราว์เซอร์ของคุณไม่รองรับการแปลงข้อความเป็นเสียง');
+        console.error('ResponsiveVoice.js ไม่พร้อมใช้งาน');
+        showError('ไม่สามารถพูดข้อความได้');
     }
 }
 
