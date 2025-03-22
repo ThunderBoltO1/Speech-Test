@@ -19,9 +19,7 @@ let isMixingMode = false;
 // DOM Elements
 const elements = {
     modal: document.getElementById('modal'),
-    mixModal: document.getElementById('mix-modal'),
     buttonContainer: document.getElementById('button-container'),
-    wordButtonsContainer: document.getElementById('word-buttons-container'),
     selectedWordsContainer: document.getElementById('selected-words-container'),
     mixResult: document.getElementById('mix-result'),
     newWordInput: document.getElementById('new-word-input')
@@ -100,7 +98,6 @@ function startOAuthFlow() {
 async function loadInitialData() {
     try {
         await loadCategoryData();
-        await loadWordsForMixing();
     } catch (error) {
         showError('ไม่สามารถโหลดข้อมูลเริ่มต้นได้');
     }
@@ -120,37 +117,10 @@ async function loadCategoryData() {
 
 function renderButtons(words = []) {
     elements.buttonContainer.innerHTML = words.map(word => `
-        <button class="word-button bg-blue-500 text-white px-4 py-2 rounded m-2 hover:bg-blue-600 transition-all"
+        <button class="word-button ${isMixingMode ? 'cursor-pointer' : 'cursor-default'} 
+                bg-blue-500 text-white px-4 py-2 rounded m-2 hover:bg-blue-600 transition-all"
                 data-word="${word}"
                 onclick="${isMixingMode ? `toggleWordSelection('${word}')` : `speakText('${word}')`}">
-            ${word}
-        </button>
-    `).join('');
-}
-
-async function loadWordsForMixing() {
-    try {
-        const sheetName = CATEGORY_SHEETS[currentCategory];
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=COLUMNS`;
-        
-        const response = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-        
-        const data = await response.json();
-        renderWordSelectionButtons(data.values?.[0] || []);
-    } catch (error) {
-        console.error('Error loading words:', error);
-        showError('ไม่สามารถโหลดข้อมูลได้');
-    }
-}
-
-function renderWordSelectionButtons(words = []) {
-    elements.wordButtonsContainer.innerHTML = words.map(word => `
-        <button class="word-select-button px-4 py-2 rounded m-1 transition-all 
-                    ${selectedWords.includes(word) ? 'bg-green-500' : 'bg-blue-500'} 
-                    hover:bg-blue-600 text-white"
-                onclick="toggleWordSelection('${word}')">
             ${word}
         </button>
     `).join('');
@@ -179,7 +149,6 @@ function toggleWordSelection(word) {
 }
 
 function updateSelectionUI() {
-    renderWordSelectionButtons();
     elements.selectedWordsContainer.innerHTML = selectedWords.map(word => `
         <span class="selected-word bg-green-500 text-white px-2 py-1 rounded m-1">
             ${word}
@@ -221,32 +190,33 @@ function closeModal() {
 }
 
 function toggleMixingMode() {
-    if (isMixingMode) {
-        saveMixedWords();
-    } else {
-        openMixModal();
+    isMixingMode = !isMixingMode;
+    updateMixingUI();
+    
+    if (!isMixingMode) {
+        // เคลียร์คำที่เลือกเมื่อออกจากโหมดผสมคำ
+        selectedWords = [];
+        updateSelectionUI();
     }
 }
 
-function openMixModal() {
-    isMixingMode = true;
-    elements.mixModal.classList.remove('hidden');
-    updateMixingUI();
-}
-
-function closeMixModal() {
-    isMixingMode = false;
-    elements.mixModal.classList.add('hidden');
-    selectedWords = [];
-    updateSelectionUI();
-}
-
 function updateMixingUI() {
+    // อัปเดตสถานะปุ่มหมวดหมู่
     document.querySelectorAll('.category-button').forEach(button => {
         button.disabled = isMixingMode;
     });
     
-    document.getElementById('btn-mix').textContent = isMixingMode ? 'บันทึกคำผสม' : 'ผสมคำ';
+    // อัปเดตปุ่มผสมคำ
+    const mixButton = document.getElementById('btn-mix');
+    if (isMixingMode) {
+        mixButton.textContent = 'บันทึกคำผสม';
+        mixButton.classList.remove('bg-purple-500');
+        mixButton.classList.add('bg-green-500');
+    } else {
+        mixButton.textContent = 'ผสมคำ';
+        mixButton.classList.remove('bg-green-500');
+        mixButton.classList.add('bg-purple-500');
+    }
 }
 
 // Error Handling
@@ -294,7 +264,7 @@ async function saveMixedWords() {
     try {
         await addWordToSheet(sentence, 'คลัง');
         showToast('บันทึกคำผสมสำเร็จในหมวดคลัง!');
-        closeMixModal();
+        toggleMixingMode(); // ปิดโหมดผสมคำ
         setCategory('คลัง'); // โหลดข้อมูลหมวด "คลัง" ใหม่
     } catch (error) {
         showError('เกิดข้อผิดพลาดในการบันทึกคำผสม');
