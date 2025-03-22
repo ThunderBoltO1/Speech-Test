@@ -193,13 +193,40 @@ function speakText(text) {
     if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'th-TH'; // ตั้งค่าภาษาเป็นไทย
+        utterance.onstart = () => {
+            console.log('เริ่มพูด:', text);
+            highlightSpeakingButton(text);
+        };
+        utterance.onend = () => {
+            console.log('พูดเสร็จสิ้น:', text);
+            removeSpeakingHighlight();
+        };
+        utterance.onerror = (error) => {
+            console.error('เกิดข้อผิดพลาดในการพูด:', error);
+            showError('ไม่สามารถพูดข้อความได้');
+        };
         window.speechSynthesis.speak(utterance);
 
         // แสดงข้อความที่พูดบน mix-result
         updateMixResult(text);
     } else {
+        console.error('เบราว์เซอร์ของคุณไม่รองรับการแปลงข้อความเป็นเสียง');
         showError('เบราว์เซอร์ของคุณไม่รองรับการแปลงข้อความเป็นเสียง');
     }
+}
+
+function highlightSpeakingButton(text) {
+    document.querySelectorAll('.word-button').forEach(button => {
+        if (button.textContent.trim() === text) {
+            button.classList.add('ring-4', 'ring-blue-300');
+        }
+    });
+}
+
+function removeSpeakingHighlight() {
+    document.querySelectorAll('.word-button').forEach(button => {
+        button.classList.remove('ring-4', 'ring-blue-300');
+    });
 }
 
 // Modal Functions
