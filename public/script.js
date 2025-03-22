@@ -187,7 +187,18 @@ function loadWordsForMixing() {
     })
     .then(data => {
         console.log(data);  // Debugging line to check the data received
-        if (!data) return; // กรณีที่มีการ redirect ไปแล้ว
+        // Check if the returned range includes the expected sheet name
+        const categorySheet = currentCategory === "ทั่วไป" ? "common" :
+                              currentCategory === "ความต้องการ" ? "need" :
+                              currentCategory === "คลัง" ? "storage" : "common";
+        if (!data || !data.values || !data.range || !data.range.includes(categorySheet)) {
+            showError("Sheet name mismatch or incorrect sheetId. Expected sheet: " + categorySheet);
+            const wordButtonsContainer = document.getElementById('word-buttons-container');
+            if (wordButtonsContainer) {
+                wordButtonsContainer.innerHTML = '<div class="text-center w-full py-4 text-red-500">ไม่พบข้อมูล</div>';
+            }
+            return;
+        }
         
         if (!data.values) {
             showError("ไม่มีข้อมูลที่ได้รับจาก Google Sheets");
