@@ -113,7 +113,7 @@ async function loadCategoryData() {
     });
     
     const data = await response.json();
-    renderButtons(data.values[0]);
+    renderButtons(data.values?.[0] || []);
 }
 
 function renderButtons(words = []) {
@@ -127,14 +127,19 @@ function renderButtons(words = []) {
 }
 
 async function loadWordsForMixing() {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${CATEGORY_SHEETS[currentCategory]}?majorDimension=COLUMNS`;
-    
-    const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-    });
-    
-    const data = await response.json();
-    renderWordSelectionButtons(data.values[0]);
+    try {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${CATEGORY_SHEETS[currentCategory]}?majorDimension=COLUMNS`;
+        
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        
+        const data = await response.json();
+        renderWordSelectionButtons(data.values?.[0] || []);
+    } catch (error) {
+        console.error('Error loading words:', error);
+        showError('ไม่สามารถโหลดข้อมูลได้');
+    }
 }
 
 function renderWordSelectionButtons(words = []) {
@@ -234,4 +239,65 @@ function showError(message) {
 // Initialize
 if (typeof responsiveVoice !== 'undefined') {
     responsiveVoice.setDefaultVoice("Thai Female");
+}
+
+// เพิ่มฟังก์ชันที่ขาดหายไป
+function addNewWord() {
+    const newWord = elements.newWordInput.value.trim();
+    
+    if (!newWord) {
+        showError('กรุณากรอกคำศัพท์');
+        return;
+    }
+
+    // ตรวจสอบคำซ้ำ
+    const words = Array.from(document.querySelectorAll('.word-button'))
+                      .map(button => button.textContent.trim());
+    
+    if (words.includes(newWord)) {
+        showError('คำนี้มีอยู่แล้วในระบบ');
+        return;
+    }
+
+    // เพิ่มคำใหม่ลงใน Google Sheets
+    addWordToSheet(newWord, currentCategory)
+        .then(() => {
+            closeModal();
+            loadCategoryData(); // โหลดข้อมูลใหม่
+        })
+        .catch(error => {
+            showError('เกิดข้อผิดพลาดในการบันทึกคำใหม่');
+            console.error(error);
+        });
+}
+
+async function addWordToSheet(word, category) {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${CATEGORY_SHEETS[category]}!A:A:append?valueInputOption=USER_ENTERED`;
+    
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            values: [[word]]
+        })
+    });
+    
+    if (!response.ok) {
+        throw new Error('ไม่สามารถบันทึกข้อมูลได้');
+    }
+}
+
+function mixWords() {
+    if (selectedWords.length === 0) {
+        showError('กรุณาเลือกคำอย่างน้อย 1 คำ');
+        return;
+    }
+
+    const sentence = selectedWords.join(' ');
+    elements.mixResult.textContent = sentence;
+    speakText(sentence);
+    closeMixModal();
 }
