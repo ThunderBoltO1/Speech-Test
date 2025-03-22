@@ -14,6 +14,7 @@ let accessToken = null;
 let tokenExpiry = null;
 let currentCategory = 'ทั่วไป';
 let selectedWords = [];
+let isMixingMode = false;
 
 // DOM Elements
 const elements = {
@@ -33,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     document.getElementById('btn-add').addEventListener('click', openModal);
-    document.getElementById('btn-mix').addEventListener('click', openMixModal);
+    document.getElementById('btn-mix').addEventListener('click', toggleMixingMode);
     
     handleAuthResponse();
 });
@@ -106,7 +107,8 @@ async function loadInitialData() {
 }
 
 async function loadCategoryData() {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${CATEGORY_SHEETS[currentCategory]}?majorDimension=COLUMNS`;
+    const sheetName = CATEGORY_SHEETS[currentCategory];
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=COLUMNS`;
     
     const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -120,7 +122,7 @@ function renderButtons(words = []) {
     elements.buttonContainer.innerHTML = words.map(word => `
         <button class="word-button bg-blue-500 text-white px-4 py-2 rounded m-2 hover:bg-blue-600 transition-all"
                 data-word="${word}"
-                onclick="speakText('${word}')">
+                onclick="${isMixingMode ? `toggleWordSelection('${word}')` : `speakText('${word}')`}">
             ${word}
         </button>
     `).join('');
@@ -128,7 +130,8 @@ function renderButtons(words = []) {
 
 async function loadWordsForMixing() {
     try {
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${CATEGORY_SHEETS[currentCategory]}?majorDimension=COLUMNS`;
+        const sheetName = CATEGORY_SHEETS[currentCategory];
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=COLUMNS`;
         
         const response = await fetch(url, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -162,6 +165,8 @@ function setCategory(category) {
 }
 
 function toggleWordSelection(word) {
+    if (!isMixingMode) return; // ทำงานเฉพาะในโหมดผสมคำ
+    
     const index = selectedWords.indexOf(word);
     
     if (index > -1) {
@@ -215,12 +220,33 @@ function closeModal() {
     elements.newWordInput.value = '';
 }
 
+function toggleMixingMode() {
+    if (isMixingMode) {
+        saveMixedWords();
+    } else {
+        openMixModal();
+    }
+}
+
 function openMixModal() {
+    isMixingMode = true;
     elements.mixModal.classList.remove('hidden');
+    updateMixingUI();
 }
 
 function closeMixModal() {
+    isMixingMode = false;
     elements.mixModal.classList.add('hidden');
+    selectedWords = [];
+    updateSelectionUI();
+}
+
+function updateMixingUI() {
+    document.querySelectorAll('.category-button').forEach(button => {
+        button.disabled = isMixingMode;
+    });
+    
+    document.getElementById('btn-mix').textContent = isMixingMode ? 'บันทึกคำผสม' : 'ผสมคำ';
 }
 
 // Error Handling
@@ -236,43 +262,49 @@ function showError(message) {
     }, 5000);
 }
 
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg';
+    toast.textContent = message;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
 // Initialize
 if (typeof responsiveVoice !== 'undefined') {
     responsiveVoice.setDefaultVoice("Thai Female");
 }
 
 // เพิ่มฟังก์ชันที่ขาดหายไป
-function addNewWord() {
-    const newWord = elements.newWordInput.value.trim();
-    
-    if (!newWord) {
-        showError('กรุณากรอกคำศัพท์');
+async function saveMixedWords() {
+    if (selectedWords.length === 0) {
+        showError('กรุณาเลือกคำอย่างน้อย 1 คำ');
         return;
     }
 
-    // ตรวจสอบคำซ้ำ
-    const words = Array.from(document.querySelectorAll('.word-button'))
-                      .map(button => button.textContent.trim());
-    
-    if (words.includes(newWord)) {
-        showError('คำนี้มีอยู่แล้วในระบบ');
-        return;
-    }
+    const sentence = selectedWords.join(' ');
+    elements.mixResult.textContent = sentence;
+    speakText(sentence);
 
-    // เพิ่มคำใหม่ลงใน Google Sheets
-    addWordToSheet(newWord, currentCategory)
-        .then(() => {
-            closeModal();
-            loadCategoryData(); // โหลดข้อมูลใหม่
-        })
-        .catch(error => {
-            showError('เกิดข้อผิดพลาดในการบันทึกคำใหม่');
-            console.error(error);
-        });
+    // บันทึกคำผสมลงใน Sheet3 (หมวดคลัง)
+    try {
+        await addWordToSheet(sentence, 'คลัง');
+        showToast('บันทึกคำผสมสำเร็จในหมวดคลัง!');
+        closeMixModal();
+        setCategory('คลัง'); // โหลดข้อมูลหมวด "คลัง" ใหม่
+    } catch (error) {
+        showError('เกิดข้อผิดพลาดในการบันทึกคำผสม');
+        console.error(error);
+    }
 }
 
 async function addWordToSheet(word, category) {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${CATEGORY_SHEETS[category]}!A:A:append?valueInputOption=USER_ENTERED`;
+    const sheetName = CATEGORY_SHEETS[category];
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A:A:append?valueInputOption=USER_ENTERED`;
     
     const response = await fetch(url, {
         method: 'POST',
@@ -288,16 +320,4 @@ async function addWordToSheet(word, category) {
     if (!response.ok) {
         throw new Error('ไม่สามารถบันทึกข้อมูลได้');
     }
-}
-
-function mixWords() {
-    if (selectedWords.length === 0) {
-        showError('กรุณาเลือกคำอย่างน้อย 1 คำ');
-        return;
-    }
-
-    const sentence = selectedWords.join(' ');
-    elements.mixResult.textContent = sentence;
-    speakText(sentence);
-    closeMixModal();
 }
