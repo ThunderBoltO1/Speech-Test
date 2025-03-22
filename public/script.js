@@ -1,7 +1,7 @@
 // OAuth2
 const CLIENT_ID = '271962080875-dr9uild15rad3n86816nmfq5ms7mj95o.apps.googleusercontent.com';
 const REDIRECT_URI = 'https://speech-test-nine.vercel.app';
-const sheetId = "1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8";
+const sheetId = "1XuZ7o1fcZ6Y01buC6J9Aep_tU7H9XFLt8ZUVPPrp340";
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const API_KEY = 'AIzaSyCugN1kot7Nij2PWhKsP08I6yeHNgsYrQI';
 
@@ -192,9 +192,9 @@ function loadWordsForMixing() {
     // แสดง loading indicator
     wordButtonsContainer.innerHTML = '<div class="text-center w-full py-4">กำลังโหลด...</div>';
 
-    const categorySheet = currentCategory === "ทั่วไป" ? "common" :
-                          currentCategory === "ความต้องการ" ? "need" :
-                          currentCategory === "คลัง" ? "storage" : "common";
+    const categorySheet = currentCategory === "ทั่วไป" ? "sheet1" :
+                          currentCategory === "ความต้องการ" ? "sheet2" :
+                          currentCategory === "คลัง" ? "storage" : "sheet3";
 
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${categorySheet}?key=${API_KEY}`;
     console.log("URL ที่ใช้ดึงข้อมูล:", url);  // Debugging line
