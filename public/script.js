@@ -188,7 +188,10 @@ function loadWordsForMixing() {
         showError('ไม่พบ container สำหรับปุ่มคำ!');
         return;
     }
-
+    
+    // ล้างข้อมูลเก่าก่อนที่จะโหลดข้อมูลใหม่
+    wordButtonsContainer.innerHTML = '';
+    
     // แสดง loading indicator
     wordButtonsContainer.innerHTML = '<div class="text-center w-full py-4">กำลังโหลด...</div>';
 
