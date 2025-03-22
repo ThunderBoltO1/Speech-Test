@@ -32,7 +32,10 @@
     <!-- Header -->
     <header class="bg-blue-600 text-white py-4 shadow-lg">
         <h1 class="text-2xl font-bold text-center">ระบบสื่อสารด้วยเสียง</h1>
-        <div id="mix-result" class="text-center mt-2 bg-blue-700 p-2 rounded-lg mx-4"></div>
+        <div class="flex justify-center items-center mt-2">
+            <div id="mix-result" class="bg-blue-700 p-2 rounded-lg mx-2">ยังไม่ได้เลือกคำ</div>
+            <div id="mix-controls" class="flex space-x-2"></div>
+        </div>
     </header>
 
     <!-- Navigation -->
@@ -47,7 +50,6 @@
     <!-- Main Content -->
     <main class="flex-1 p-4">
         <div id="button-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
-        <div id="selected-words-container" class="mt-4"></div>
     </main>
 
     <!-- Modals -->
@@ -69,6 +71,9 @@
         </button>
         <button id="btn-mix" class="px-6 py-3 bg-purple-500 text-white rounded-full shadow-lg hover:bg-purple-600 transition-all">
             🔀 ผสมคำ
+        </button>
+        <button id="btn-delete" class="px-6 py-3 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-all">
+            🗑️ ลบ
         </button>
     </div>
 

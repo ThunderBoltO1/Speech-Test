@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('btn-add').addEventListener('click', openModal);
     document.getElementById('btn-mix').addEventListener('click', toggleMixingMode);
+    document.getElementById('btn-delete').addEventListener('click', deleteSelectedWord);
     
     handleAuthResponse();
 });
@@ -117,12 +118,15 @@ async function loadCategoryData() {
 
 function renderButtons(words = []) {
     elements.buttonContainer.innerHTML = words.map(word => `
-        <button class="word-button ${isMixingMode ? 'cursor-pointer' : 'cursor-default'} 
-                bg-blue-500 text-white px-4 py-2 rounded m-2 hover:bg-blue-600 transition-all"
-                data-word="${word}"
-                onclick="${isMixingMode ? `toggleWordSelection('${word}')` : `speakText('${word}')`}">
-            ${word}
-        </button>
+        <div class="flex items-center justify-between bg-blue-500 text-white px-4 py-2 rounded m-2">
+            <button class="flex-1 text-left"
+                    onclick="${isMixingMode ? `toggleWordSelection('${word}')` : `speakText('${word}')`}">
+                ${word}
+            </button>
+            <button onclick="deleteWord('${word}')" class="ml-2 text-red-300 hover:text-red-100">
+                🗑️
+            </button>
+        </div>
     `).join('');
 }
 
@@ -146,6 +150,7 @@ function toggleWordSelection(word) {
     }
     
     updateSelectionUI();
+    updateMixResult();
 }
 
 function updateSelectionUI() {
@@ -250,24 +255,31 @@ if (typeof responsiveVoice !== 'undefined') {
 }
 
 // เพิ่มฟังก์ชันที่ขาดหายไป
-async function saveMixedWords() {
-    if (selectedWords.length === 0) {
-        showError('กรุณาเลือกคำอย่างน้อย 1 คำ');
+async function addNewWord() {
+    const newWord = elements.newWordInput.value.trim();
+    
+    if (!newWord) {
+        showError('กรุณากรอกคำศัพท์');
         return;
     }
 
-    const sentence = selectedWords.join(' ');
-    elements.mixResult.textContent = sentence;
-    speakText(sentence);
+    // ตรวจสอบคำซ้ำ
+    const words = Array.from(document.querySelectorAll('.word-button'))
+                      .map(button => button.textContent.trim());
+    
+    if (words.includes(newWord)) {
+        showError('คำนี้มีอยู่แล้วในระบบ');
+        return;
+    }
 
-    // บันทึกคำผสมลงใน Sheet3 (หมวดคลัง)
+    // เพิ่มคำใหม่ลงใน Google Sheets
     try {
-        await addWordToSheet(sentence, 'คลัง');
-        showToast('บันทึกคำผสมสำเร็จในหมวดคลัง!');
-        toggleMixingMode(); // ปิดโหมดผสมคำ
-        setCategory('คลัง'); // โหลดข้อมูลหมวด "คลัง" ใหม่
+        await addWordToSheet(newWord, currentCategory);
+        showToast('เพิ่มคำศัพท์สำเร็จ!');
+        closeModal();
+        loadCategoryData(); // โหลดข้อมูลใหม่
     } catch (error) {
-        showError('เกิดข้อผิดพลาดในการบันทึกคำผสม');
+        showError('เกิดข้อผิดพลาดในการบันทึกคำใหม่');
         console.error(error);
     }
 }
@@ -289,5 +301,54 @@ async function addWordToSheet(word, category) {
     
     if (!response.ok) {
         throw new Error('ไม่สามารถบันทึกข้อมูลได้');
+    }
+}
+
+async function deleteWord(word) {
+    if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบคำ "${word}"?`)) {
+        return;
+    }
+
+    try {
+        await removeWordFromSheet(word, currentCategory);
+        showToast('ลบคำศัพท์สำเร็จ!');
+        loadCategoryData(); // โหลดข้อมูลใหม่
+    } catch (error) {
+        showError('เกิดข้อผิดพลาดในการลบคำ');
+        console.error(error);
+    }
+}
+
+async function removeWordFromSheet(word, category) {
+    const sheetName = CATEGORY_SHEETS[category];
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=COLUMNS`;
+    
+    // ดึงข้อมูลทั้งหมด
+    const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+    
+    const data = await response.json();
+    const words = data.values?.[0] || [];
+    
+    // กรองคำที่ต้องการลบ
+    const updatedWords = words.filter(w => w !== word);
+    
+    // อัปเดตข้อมูลใน Google Sheets
+    const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?valueInputOption=USER_ENTERED`;
+    
+    const updateResponse = await fetch(updateUrl, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            values: [updatedWords]
+        })
+    });
+    
+    if (!updateResponse.ok) {
+        throw new Error('ไม่สามารถอัปเดตข้อมูลได้');
     }
 }
