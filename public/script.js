@@ -165,6 +165,7 @@ function loadWordsForMixing() {
                           currentCategory === "คลัง" ? "storage" : "common";
 
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${categorySheet}?key=${API_KEY}`;
+    console.log("URL ที่ใช้ดึงข้อมูล:", url);  // Debugging line
     
     fetch(url, {
         method: "GET",
@@ -185,6 +186,7 @@ function loadWordsForMixing() {
         return response.json();
     })
     .then(data => {
+        console.log(data);  // Debugging line to check the data received
         if (!data) return; // กรณีที่มีการ redirect ไปแล้ว
         
         if (!data.values) {
