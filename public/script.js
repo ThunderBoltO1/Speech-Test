@@ -216,6 +216,9 @@ function toggleMixingMode() {
         selectedWords = [];
         updateSelectionUI();
     }
+
+    // อัปเดตปุ่มคำศัพท์
+    loadCategoryData();
 }
 
 function updateMixingUI() {
@@ -273,7 +276,7 @@ function showToast(message) {
 
 // Initialize
 if (typeof responsiveVoice !== 'undefined') {
-    responsiveVoice.setDefaultVoice("Thai Female");
+    responsiveVoice.setDefaultVoice("Thai Male");
 }
 
 // Add New Word
