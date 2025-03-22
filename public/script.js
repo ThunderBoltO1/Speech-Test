@@ -77,21 +77,15 @@ function checkLocalStorageToken() {
         accessToken = token;
         loadInitialData();
     } else {
-        startOAuthFlow();
+        authenticate();
     }
 }
 
-function startOAuthFlow() {
-    const state = Math.random().toString(36).substr(2);
+function authenticate() {
+    const state = Math.random().toString(36).substring(2);
     localStorage.setItem('oauth_state', state);
     
-    const authUrl = new URL('https://accounts.google.com/o/oauth2/auth');
-    authUrl.searchParams.set('client_id', CLIENT_ID);
-    authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
-    authUrl.searchParams.set('response_type', 'token');
-    authUrl.searchParams.set('scope', SCOPES);
-    authUrl.searchParams.set('state', state);
-    
+    const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=${encodeURIComponent(SCOPES)}&state=${state}`;
     window.location.href = authUrl;
 }
 
@@ -117,7 +111,7 @@ async function loadCategoryData() {
             if (response.status === 401) {
                 // Token หมดอายุหรือไม่ถูกต้อง
                 showError('การยืนยันตัวตนล้มเหลว กรุณาล็อกอินใหม่');
-                authenticate();
+                authenticate(); // เรียกฟังก์ชัน authenticate
                 return;
             }
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -374,4 +368,21 @@ async function removeWordFromSheet(word, category) {
     if (!updateResponse.ok) {
         throw new Error('ไม่สามารถอัปเดตข้อมูลได้');
     }
+}
+
+// เพิ่มฟังก์ชัน deleteSelectedWord
+function deleteSelectedWord() {
+    if (selectedWords.length === 0) {
+        showError('ไม่มีคำที่เลือกไว้');
+        return;
+    }
+
+    if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบคำที่เลือกทั้งหมด?`)) {
+        return;
+    }
+
+    selectedWords = []; // เคลียร์คำที่เลือก
+    updateSelectionUI();
+    updateMixResult();
+    showToast('ลบคำที่เลือกสำเร็จ!');
 }
