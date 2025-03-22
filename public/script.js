@@ -109,9 +109,8 @@ async function loadCategoryData() {
         
         if (!response.ok) {
             if (response.status === 401) {
-                // Token หมดอายุหรือไม่ถูกต้อง
                 showError('การยืนยันตัวตนล้มเหลว กรุณาล็อกอินใหม่');
-                authenticate(); // เรียกฟังก์ชัน authenticate
+                authenticate();
                 return;
             }
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -122,7 +121,7 @@ async function loadCategoryData() {
             throw new Error('ไม่มีข้อมูลใน Google Sheets');
         }
         
-        renderButtons(data.values[0]); // แสดงข้อมูลใน UI
+        renderButtons(data.values[0]);
     } catch (error) {
         console.error('Error loading category data:', error);
         showError('ไม่สามารถโหลดข้อมูลได้: ' + error.message);
@@ -132,15 +131,10 @@ async function loadCategoryData() {
 function renderButtons(words = []) {
     if (elements.buttonContainer) {
         elements.buttonContainer.innerHTML = words.map(word => `
-            <div class="flex items-center justify-between bg-blue-500 text-white px-4 py-2 rounded m-2">
-                <button class="flex-1 text-left"
-                        onclick="${isMixingMode ? `toggleWordSelection('${word}')` : `speakText('${word}')`}">
-                    ${word}
-                </button>
-                <button onclick="deleteWord('${word}')" class="ml-2 text-red-300 hover:text-red-100">
-                    🗑️
-                </button>
-            </div>
+            <button class="word-button flex-1 text-left bg-blue-500 text-white px-4 py-2 rounded m-2 hover:bg-blue-600 transition-all"
+                    onclick="${isMixingMode ? `toggleWordSelection('${word}')` : `speakText('${word}')`}">
+                ${word}
+            </button>
         `).join('');
     }
 }
@@ -150,11 +144,11 @@ function setCategory(category) {
     currentCategory = category;
     selectedWords = [];
     updateSelectionUI();
-    loadCategoryData(); // โหลดข้อมูลใหม่เมื่อเปลี่ยนหมวดหมู่
+    loadCategoryData();
 }
 
 function toggleWordSelection(word) {
-    if (!isMixingMode) return; // ทำงานเฉพาะในโหมดผสมคำ
+    if (!isMixingMode) return;
     
     const index = selectedWords.indexOf(word);
     
@@ -189,7 +183,7 @@ function speakText(text) {
 
 function highlightSpeakingButton(text) {
     document.querySelectorAll('.word-button').forEach(button => {
-        if (button.dataset.word === text) {
+        if (button.textContent.trim() === text) {
             button.classList.add('ring-4', 'ring-blue-300');
         }
     });
@@ -216,19 +210,16 @@ function toggleMixingMode() {
     updateMixingUI();
     
     if (!isMixingMode) {
-        // เคลียร์คำที่เลือกเมื่อออกจากโหมดผสมคำ
         selectedWords = [];
         updateSelectionUI();
     }
 }
 
 function updateMixingUI() {
-    // อัปเดตสถานะปุ่มหมวดหมู่
     document.querySelectorAll('.category-button').forEach(button => {
         button.disabled = isMixingMode;
     });
     
-    // อัปเดตปุ่มผสมคำ
     const mixButton = document.getElementById('btn-mix');
     if (isMixingMode) {
         mixButton.textContent = 'บันทึกคำผสม';
@@ -271,7 +262,7 @@ if (typeof responsiveVoice !== 'undefined') {
     responsiveVoice.setDefaultVoice("Thai Female");
 }
 
-// เพิ่มฟังก์ชันที่ขาดหายไป
+// Add New Word
 async function addNewWord() {
     const newWord = elements.newWordInput.value.trim();
     
@@ -280,7 +271,6 @@ async function addNewWord() {
         return;
     }
 
-    // ตรวจสอบคำซ้ำ
     const words = Array.from(document.querySelectorAll('.word-button'))
                       .map(button => button.textContent.trim());
     
@@ -289,15 +279,14 @@ async function addNewWord() {
         return;
     }
 
-    // เพิ่มคำใหม่ลงใน Google Sheets
     try {
         await addWordToSheet(newWord, currentCategory);
         showToast('เพิ่มคำศัพท์สำเร็จ!');
         closeModal();
-        loadCategoryData(); // โหลดข้อมูลใหม่
+        loadCategoryData();
     } catch (error) {
-        showError('เกิดข้อผิดพลาดในการบันทึกคำใหม่');
-        console.error(error);
+        showError('เกิดข้อผิดพลาดในการบันทึกคำใหม่: ' + error.message);
+        console.error('Error adding new word:', error);
     }
 }
 
@@ -317,60 +306,16 @@ async function addWordToSheet(word, category) {
     });
     
     if (!response.ok) {
-        throw new Error('ไม่สามารถบันทึกข้อมูลได้');
+        if (response.status === 401) {
+            showError('การยืนยันตัวตนล้มเหลว กรุณาล็อกอินใหม่');
+            authenticate();
+            return;
+        }
+        throw new Error(`ไม่สามารถบันทึกข้อมูลได้: ${response.statusText}`);
     }
 }
 
-async function deleteWord(word) {
-    if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบคำ "${word}"?`)) {
-        return;
-    }
-
-    try {
-        await removeWordFromSheet(word, currentCategory);
-        showToast('ลบคำศัพท์สำเร็จ!');
-        loadCategoryData(); // โหลดข้อมูลใหม่
-    } catch (error) {
-        showError('เกิดข้อผิดพลาดในการลบคำ');
-        console.error(error);
-    }
-}
-
-async function removeWordFromSheet(word, category) {
-    const sheetName = CATEGORY_SHEETS[category];
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=COLUMNS`;
-    
-    // ดึงข้อมูลทั้งหมด
-    const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-    });
-    
-    const data = await response.json();
-    const words = data.values?.[0] || [];
-    
-    // กรองคำที่ต้องการลบ
-    const updatedWords = words.filter(w => w !== word);
-    
-    // อัปเดตข้อมูลใน Google Sheets
-    const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?valueInputOption=USER_ENTERED`;
-    
-    const updateResponse = await fetch(updateUrl, {
-        method: 'PUT',
-        headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            values: [updatedWords]
-        })
-    });
-    
-    if (!updateResponse.ok) {
-        throw new Error('ไม่สามารถอัปเดตข้อมูลได้');
-    }
-}
-
-// เพิ่มฟังก์ชัน deleteSelectedWord
+// Delete Selected Words
 function deleteSelectedWord() {
     if (selectedWords.length === 0) {
         showError('ไม่มีคำที่เลือกไว้');
@@ -381,7 +326,7 @@ function deleteSelectedWord() {
         return;
     }
 
-    selectedWords = []; // เคลียร์คำที่เลือก
+    selectedWords = [];
     updateSelectionUI();
     updateMixResult();
     showToast('ลบคำที่เลือกสำเร็จ!');
