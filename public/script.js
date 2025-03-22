@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ฟังก์ชันตั้งค่าหมวดหมู่
 function setCategory(category) {
     currentCategory = category;
-    // ล้างคำที่เลือกเมื่อเปลี่ยนหมวดหมู่
+    console.log("หมวดหมู่ที่เลือก:", currentCategory);  // เพิ่มการ debug
     selectedWords = [];
     updateSelectedWordsDisplay();
     
