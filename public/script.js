@@ -27,13 +27,20 @@ const elements = {
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
+    // ตรวจสอบว่าปุ่มมีอยู่ใน DOM หรือไม่
+    const saveMixButton = document.getElementById('btn-save-mix');
+    if (saveMixButton) {
+        saveMixButton.addEventListener('click', saveMixedWords);
+    } else {
+        console.error('ปุ่ม "บันทึกคำผสม" ไม่พบใน DOM');
+    }
+
     document.querySelectorAll('.category-button').forEach(button => {
         button.addEventListener('click', () => setCategory(button.dataset.category));
     });
     
     document.getElementById('btn-add').addEventListener('click', openModal);
     document.getElementById('btn-mix').addEventListener('click', toggleMixingMode);
-    document.getElementById('btn-save-mix').addEventListener('click', saveMixedWords);
     document.getElementById('btn-delete').addEventListener('click', deleteSelectedWord);
     
     handleAuthResponse();
@@ -90,35 +97,6 @@ function authenticate() {
     window.location.href = authUrl;
 }
 
-async function refreshToken() {
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (!refreshToken) {
-        authenticate(); // ถ้าไม่มี Refresh Token ให้ยืนยันตัวตนใหม่
-        return;
-    }
-
-    const url = `https://oauth2.googleapis.com/token?client_id=${CLIENT_ID}&client_secret=YOUR_CLIENT_SECRET&refresh_token=${refreshToken}&grant_type=refresh_token`;
-    
-    try {
-        const response = await fetch(url, { method: 'POST' });
-        const data = await response.json();
-        
-        if (data.access_token) {
-            accessToken = data.access_token;
-            const expiresIn = parseInt(data.expires_in) * 1000;
-            tokenExpiry = Date.now() + expiresIn;
-            
-            localStorage.setItem('access_token', accessToken);
-            localStorage.setItem('token_expiry', tokenExpiry);
-        } else {
-            authenticate(); // ถ้าไม่สามารถรีเฟรช Token ได้ ให้ยืนยันตัวตนใหม่
-        }
-    } catch (error) {
-        console.error('Error refreshing token:', error);
-        authenticate(); // ถ้าเกิดข้อผิดพลาด ให้ยืนยันตัวตนใหม่
-    }
-}
-
 // Data Functions
 async function loadInitialData() {
     try {
@@ -129,10 +107,6 @@ async function loadInitialData() {
 }
 
 async function loadCategoryData() {
-    if (!accessToken || Date.now() >= tokenExpiry) {
-        await refreshToken(); // ถ้า Token หมดอายุ ให้รีเฟรช Token
-    }
-
     const sheetName = CATEGORY_SHEETS[currentCategory];
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=COLUMNS`;
     
