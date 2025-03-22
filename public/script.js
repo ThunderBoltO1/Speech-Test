@@ -14,7 +14,7 @@ let accessToken = null;
 let tokenExpiry = null;
 let currentCategory = 'ทั่วไป';
 let selectedWords = [];
-let isMixingMode = false;
+let isSelectMode = false; // เพิ่มตัวแปรนี้
 
 // DOM Elements
 const elements = {
@@ -132,8 +132,9 @@ function renderButtons(words = []) {
     if (elements.buttonContainer) {
         elements.buttonContainer.innerHTML = words.map(word => `
             <button class="word-button flex-1 text-left bg-blue-500 text-white px-4 py-2 rounded m-2 hover:bg-blue-600 transition-all"
-                    onclick="${isMixingMode ? `toggleWordSelection('${word}')` : `speakText('${word}')`}">
+                    onclick="${isSelectMode ? `toggleWordSelection('${word}')` : `speakText('${word}')`}">
                 ${word}
+                ${isSelectMode ? `<span class="ml-2">${selectedWords.includes(word) ? '✔️' : ''}</span>` : ''}
             </button>
         `).join('');
     }
@@ -148,7 +149,7 @@ function setCategory(category) {
 }
 
 function toggleWordSelection(word) {
-    if (!isMixingMode) return;
+    if (!isSelectMode) return;
     
     const index = selectedWords.indexOf(word);
     
@@ -206,10 +207,12 @@ function closeModal() {
 }
 
 function toggleMixingMode() {
-    isMixingMode = !isMixingMode;
+    isSelectMode = !isSelectMode;
     updateMixingUI();
     
-    if (!isMixingMode) {
+    if (!isSelectMode) {
+        const mixedText = selectedWords.join(' ');
+        speakText(mixedText);
         selectedWords = [];
         updateSelectionUI();
     }
@@ -217,18 +220,29 @@ function toggleMixingMode() {
 
 function updateMixingUI() {
     document.querySelectorAll('.category-button').forEach(button => {
-        button.disabled = isMixingMode;
+        button.disabled = isSelectMode;
     });
     
     const mixButton = document.getElementById('btn-mix');
-    if (isMixingMode) {
-        mixButton.textContent = 'บันทึกคำผสม';
+    if (isSelectMode) {
+        mixButton.textContent = 'พูดคำผสม';
         mixButton.classList.remove('bg-purple-500');
         mixButton.classList.add('bg-green-500');
     } else {
         mixButton.textContent = 'ผสมคำ';
         mixButton.classList.remove('bg-green-500');
         mixButton.classList.add('bg-purple-500');
+    }
+
+    const deleteButton = document.getElementById('btn-delete');
+    if (isSelectMode) {
+        deleteButton.textContent = 'ลบคำที่เลือก';
+        deleteButton.classList.remove('bg-red-500');
+        deleteButton.classList.add('bg-yellow-500');
+    } else {
+        deleteButton.textContent = 'ลบ';
+        deleteButton.classList.remove('bg-yellow-500');
+        deleteButton.classList.add('bg-red-500');
     }
 }
 
