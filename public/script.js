@@ -294,24 +294,57 @@ function closeModal() {
 
 function toggleMixingMode() {
     if (isSelectMode) {
-
         const mixedText = selectedWords.join(' ');
         if (mixedText.trim()) {
-
             speakText(mixedText);
-
             saveToStorage(mixedText);
         }
-
     }
 
-    
-    isSelectMode = !isSelectMode; 
+    isSelectMode = !isSelectMode;
     updateMixingUI();
 
-    loadCategoryData(); 
+    // โหลดข้อมูลจากทุกหมวดหมู่เมื่อเข้าสู่โหมดผสมคำ
+    if (isSelectMode) {
+        loadAllCategoriesData();
+    } else {
+        loadCategoryData();
+    }
 }
 
+// ฟังก์ชันใหม่สำหรับโหลดข้อมูลจากทุกหมวดหมู่
+async function loadAllCategoriesData() {
+    try {
+        const allWords = [];
+        for (const category in CATEGORY_SHEETS) {
+            const sheetName = CATEGORY_SHEETS[category];
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=COLUMNS`;
+
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    showError('การยืนยันตัวตนล้มเหลว กรุณาล็อกอินใหม่');
+                    authenticate();
+                    return;
+                }
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (data.values) {
+                const filteredWords = data.values[0].filter(word => word && word.trim() !== '');
+                allWords.push(...filteredWords);
+            }
+        }
+        renderButtons(allWords);
+    } catch (error) {
+        console.error('Error loading all categories data:', error);
+        showError('ไม่สามารถโหลดข้อมูลจากทุกหมวดหมู่ได้: ' + error.message);
+    }
+}
 
 async function saveToStorage(mixedText) {
     try {
@@ -355,19 +388,19 @@ function updateMixingUI() {
         mixButton.classList.remove('bg-purple-500');
         mixButton.classList.add('bg-green-500');
 
-        deleteButton.textContent = 'ยกเลิกผสมคำ';
+        deleteButton.textContent = 'ลบคำ';
         deleteButton.classList.remove('bg-yellow-500');
         deleteButton.classList.add('bg-red-500');
-        deleteButton.onclick = toggleMixingMode; // เปลี่ยนฟังก์ชันเป็นยกเลิกผสมคำ
+        deleteButton.onclick = deleteSelectedWords; // เปลี่ยนฟังก์ชันเป็นลบคำ
     } else {
         mixButton.textContent = 'ผสมคำ';
         mixButton.classList.remove('bg-green-500');
         mixButton.classList.add('bg-purple-500');
 
-        deleteButton.textContent = 'เลือกคำ';
+        deleteButton.textContent = 'ลบคำ';
         deleteButton.classList.remove('bg-red-500');
         deleteButton.classList.add('bg-yellow-500');
-        deleteButton.onclick = toggleWordSelectionMode; // เปลี่ยนฟังก์ชันเป็นเลือกคำ
+        deleteButton.onclick = deleteWordFromCategory; // เปลี่ยนฟังก์ชันเป็นลบคำจากหมวดหมู่
     }
 
     // ปิดการใช้งานปุ่มหมวดหมู่เมื่ออยู่ในโหมดผสมคำ
