@@ -15,7 +15,8 @@ let tokenExpiry = null;
 let currentCategory = 'ทั่วไป';
 let selectedWords = [];
 let isSelectMode = false;
-let isDeleteMode = false; // เพิ่ม state สำหรับโหมดลบคำ
+let isDeleteMode = false;
+let isSpeaking = false; // เพิ่ม state สำหรับตรวจสอบสถานะการพูด
 
 // DOM Elements
 const elements = {
@@ -23,7 +24,8 @@ const elements = {
     buttonContainer: document.getElementById('button-container'),
     selectedWordsContainer: document.getElementById('selected-words-container'),
     mixResult: document.getElementById('mix-result'),
-    newWordInput: document.getElementById('new-word-input')
+    newWordInput: document.getElementById('new-word-input'),
+    speakingIndicator: document.getElementById('speaking-indicator') // เพิ่ม element สำหรับแสดงสถานะการพูด
 };
 
 // Event Listeners
@@ -34,7 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('btn-add').addEventListener('click', openModal);
     document.getElementById('btn-mix').addEventListener('click', toggleMixingMode);
-    document.getElementById('btn-delete').addEventListener('click', deleteWordFromCategory); // เปลี่ยนเป็น deleteWordFromCategory
+    document.getElementById('btn-delete').addEventListener('click', deleteWordFromCategory);
+    document.getElementById('btn-cancel').addEventListener('click', cancelSpeech); // เพิ่มปุ่มยกเลิกการพูด
     handleAuthResponse();
 });
 
@@ -152,7 +155,7 @@ function renderButtons(words = []) {
     }
 }
 
-// UI Functions
+// UI Functions (ไม่เปลี่ยนแปลง)
 function setCategory(category) {
     currentCategory = category;
     selectedWords = [];
@@ -219,28 +222,68 @@ function updateMixResult(text = '') {
     }
 }
 
-// Speech Functions (ไม่เปลี่ยนแปลง)
+// Speech Functions (ปรับปรุง)
 function speakText(text) {
     if (typeof responsiveVoice !== 'undefined') {
-        responsiveVoice.speak(text, "Thai Female", {
-            onstart: () => {
-                console.log('เริ่มพูด:', text);
-                highlightSpeakingButton(text);
-            },
-            onend: () => {
-                console.log('พูดเสร็จสิ้น:', text);
-                removeSpeakingHighlight();
-            },
-            onerror: (error) => {
-                console.error('เกิดข้อผิดพลาดในการพูด:', error);
-                showError('ไม่สามารถพูดข้อความได้');
-            }
-        });
+        if (isSpeaking) {
+            console.log('ระบบกำลังพูดอยู่ กรุณารอสักครู่');
+            return;
+        }
 
-        updateMixResult(text);
+        // แบ่งประโยคยาว ๆ ออกเป็นประโยคสั้น ๆ
+        const sentences = text.split(/[.!?]/).filter(s => s.trim() !== '');
+        let index = 0;
+
+        const speakNextSentence = () => {
+            if (index < sentences.length) {
+                const sentence = sentences[index].trim();
+                isSpeaking = true; // ตั้งค่าเป็นกำลังพูด
+                updateSpeakingUI(true); // แสดงสถานะการพูด
+
+                responsiveVoice.speak(sentence, "Thai Male", {
+                    onstart: () => {
+                        console.log('เริ่มพูด:', sentence);
+                        highlightSpeakingButton(sentence);
+                    },
+                    onend: () => {
+                        console.log('พูดเสร็จสิ้น:', sentence);
+                        removeSpeakingHighlight();
+                        index++;
+                        speakNextSentence(); // พูดประโยคถัดไป
+                    },
+                    onerror: (error) => {
+                        console.error('เกิดข้อผิดพลาดในการพูด:', error);
+                        showError('ไม่สามารถพูดข้อความได้');
+                        isSpeaking = false; // รีเซ็ตสถานะการพูด
+                        updateSpeakingUI(false); // ปิดสถานะการพูด
+                    }
+                });
+            } else {
+                console.log('พูดเสร็จสิ้นทั้งหมด');
+                isSpeaking = false; // รีเซ็ตสถานะการพูด
+                updateSpeakingUI(false); // ปิดสถานะการพูด
+            }
+        };
+
+        speakNextSentence(); // เริ่มพูดประโยคแรก
     } else {
         console.error('ResponsiveVoice.js ไม่พร้อมใช้งาน');
         showError('ไม่สามารถพูดข้อความได้');
+    }
+}
+
+function cancelSpeech() {
+    if (typeof responsiveVoice !== 'undefined' && isSpeaking) {
+        responsiveVoice.cancel(); // ยกเลิกการพูด
+        isSpeaking = false; // รีเซ็ตสถานะการพูด
+        updateSpeakingUI(false); // ปิดสถานะการพูด
+        console.log('ยกเลิกการพูด');
+    }
+}
+
+function updateSpeakingUI(isSpeaking) {
+    if (elements.speakingIndicator) {
+        elements.speakingIndicator.textContent = isSpeaking ? 'กำลังพูด...' : '';
     }
 }
 
@@ -345,55 +388,6 @@ function updateMixingUI() {
     });
 }
 
-// Delete Functions (ปรับปรุง)
-function deleteWordFromCategory() {
-    if (!isDeleteMode) {
-        toggleDeleteMode(); // เปิดโหมดลบคำ
-        return;
-    }
-
-    if (selectedWords.length === 0) {
-        showError('กรุณาเลือกคำที่จะลบ');
-        return;
-    }
-
-    if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบคำ "${selectedWords.join(', ')}" ออกจากหมวดหมู่ "${currentCategory}"?`)) {
-        return;
-    }
-
-    try {
-        for (const word of selectedWords) {
-            deleteWordFromSheet(word, currentCategory);
-        }
-        showToast('ลบคำศัพท์ออกจากหมวดหมู่เรียบร้อยแล้ว');
-        selectedWords = []; // เคลียร์คำที่เลือก
-        toggleDeleteMode(); // ปิดโหมดลบคำ
-        loadCategoryData(); // โหลดข้อมูลใหม่
-    } catch (error) {
-        console.error('Error deleting word:', error);
-        showError('เกิดข้อผิดพลาดในการลบคำศัพท์: ' + error.message);
-    }
-}
-
-function toggleDeleteMode() {
-    isDeleteMode = !isDeleteMode;
-    updateDeleteUI();
-    loadCategoryData(); // โหลดข้อมูลใหม่เพื่อแสดงสถานะการเลือก
-}
-
-function updateDeleteUI() {
-    const deleteButton = document.getElementById('btn-delete');
-    if (isDeleteMode) {
-        deleteButton.textContent = 'ยกเลิกโหมดลบ';
-        deleteButton.classList.remove('bg-red-500');
-        deleteButton.classList.add('bg-yellow-500');
-    } else {
-        deleteButton.textContent = 'ลบ';
-        deleteButton.classList.remove('bg-yellow-500');
-        deleteButton.classList.add('bg-red-500');
-    }
-}
-
 // Error Handling (ไม่เปลี่ยนแปลง)
 function showError(message) {
     const errorToast = document.createElement('div');
@@ -421,7 +415,7 @@ function showToast(message) {
 
 // Initialize (ไม่เปลี่ยนแปลง)
 if (typeof responsiveVoice !== 'undefined') {
-    responsiveVoice.setDefaultVoice("Thai Female");
+    responsiveVoice.setDefaultVoice("Thai Male");
 }
 
 // Add New Word (ไม่เปลี่ยนแปลง)
@@ -477,7 +471,7 @@ async function addWordToSheet(word, category) {
     }
 }
 
-// Delete Word from Sheet (ไม่เปลี่ยนแปลง)
+// Delete Functions (ไม่เปลี่ยนแปลง)
 async function deleteWordFromSheet(word, category) {
     const sheetName = CATEGORY_SHEETS[category];
     
