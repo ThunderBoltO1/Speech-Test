@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('btn-add').addEventListener('click', openModal);
     document.getElementById('btn-mix').addEventListener('click', toggleMixingMode);
-    document.getElementById('btn-delete').addEventListener('click', deleteSelectedWords);
+    document.getElementById('btn-delete').addEventListener('click', toggleWordSelectionMode);
     
     handleAuthResponse();
 });
@@ -158,9 +158,11 @@ function renderButtons(words = []) {
 // UI Functions
 function setCategory(category) {
     currentCategory = category;
-    // เคลียร์คำที่เลือกเมื่อเปลี่ยนหมวดหมู่
-    selectedWords = [];
-    updateSelectionUI();
+    // เคลียร์คำที่เลือกเมื่อเปลี่ยนหมวดหมู่ในโหมดปกติ
+    if (!isSelectMode) {
+        selectedWords = [];
+        updateSelectionUI();
+    }
     loadCategoryData();
 }
 
@@ -249,7 +251,8 @@ function speakText(text) {
                     },
                     onerror: (error) => {
                         console.error('เกิดข้อผิดพลาดในการพูด:', error);
-                        showError('ไม่สามารถพูดข้อความได้');
+                        showError('ไม่สามารถพูดข้อความได้: ' + (error.error || 'unknown error'));
+                        removeSpeakingHighlight();
                     }
                 });
             } else {
@@ -352,29 +355,35 @@ function updateMixingUI() {
         mixButton.classList.remove('bg-purple-500');
         mixButton.classList.add('bg-green-500');
 
-        deleteButton.textContent = 'ลบคำที่เลือก';
-        deleteButton.classList.remove('bg-red-500');
-        deleteButton.classList.add('bg-yellow-500');
+        deleteButton.textContent = 'ยกเลิกผสมคำ';
+        deleteButton.classList.remove('bg-yellow-500');
+        deleteButton.classList.add('bg-red-500');
+        deleteButton.onclick = toggleMixingMode; // เปลี่ยนฟังก์ชันเป็นยกเลิกผสมคำ
     } else {
         mixButton.textContent = 'ผสมคำ';
         mixButton.classList.remove('bg-green-500');
         mixButton.classList.add('bg-purple-500');
 
-        deleteButton.textContent = 'ลบ';
-        deleteButton.classList.remove('bg-yellow-500');
-        deleteButton.classList.add('bg-red-500');
+        deleteButton.textContent = 'เลือกคำ';
+        deleteButton.classList.remove('bg-red-500');
+        deleteButton.classList.add('bg-yellow-500');
+        deleteButton.onclick = toggleWordSelectionMode; // เปลี่ยนฟังก์ชันเป็นเลือกคำ
     }
 
     // ปิดการใช้งานปุ่มหมวดหมู่เมื่ออยู่ในโหมดผสมคำ
     document.querySelectorAll('.category-button').forEach(button => {
         button.disabled = isSelectMode;
-        // เพิ่มการเปลี่ยนแปลงสีหรือความโปร่งใสเมื่อปุ่มถูกปิดการใช้งาน
         if (isSelectMode) {
             button.classList.add('opacity-50');
         } else {
             button.classList.remove('opacity-50');
         }
     });
+}
+
+function toggleWordSelectionMode() {
+    isSelectMode = true;
+    updateMixingUI();
 }
 
 // Error Handling
