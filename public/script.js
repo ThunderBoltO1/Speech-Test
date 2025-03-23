@@ -121,7 +121,9 @@ async function loadCategoryData() {
             throw new Error('ไม่มีข้อมูลใน Google Sheets');
         }
         
-        renderButtons(data.values[0]);
+        // กรองคำว่างออกก่อนแสดงผล
+        const filteredWords = data.values[0].filter(word => word && word.trim() !== '');
+        renderButtons(filteredWords);
     } catch (error) {
         console.error('Error loading category data:', error);
         showError('ไม่สามารถโหลดข้อมูลได้: ' + error.message);
@@ -130,19 +132,33 @@ async function loadCategoryData() {
 
 function renderButtons(words = []) {
     if (elements.buttonContainer) {
+        // สร้าง HTML สำหรับปุ่มคำศัพท์
         elements.buttonContainer.innerHTML = words.map(word => `
             <button class="word-button flex-1 text-left bg-blue-500 text-white px-4 py-2 rounded-full m-2 hover:bg-blue-600 transition-all"
-                    onclick="${isSelectMode ? `toggleWordSelection('${word}')` : `speakText('${word}')`}">
+                    data-word="${word}">
                 ${word}
-                ${isSelectMode ? `<span class="ml-2">${selectedWords.includes(word) ? '✔️' : ''}</span>` : ''}
+                ${isSelectMode ? `<span class="selection-indicator ml-2">${selectedWords.includes(word) ? '✔️' : ''}</span>` : ''}
             </button>
         `).join('');
+        
+        // เพิ่ม event listeners หลังจากสร้าง DOM elements
+        document.querySelectorAll('.word-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const word = button.getAttribute('data-word');
+                if (isSelectMode) {
+                    toggleWordSelection(word);
+                } else {
+                    speakText(word);
+                }
+            });
+        });
     }
 }
 
 // UI Functions
 function setCategory(category) {
     currentCategory = category;
+    // เคลียร์คำที่เลือกเมื่อเปลี่ยนหมวดหมู่
     selectedWords = [];
     updateSelectionUI();
     loadCategoryData();
@@ -160,7 +176,16 @@ function toggleWordSelection(word) {
     
     updateSelectionUI();
     updateMixResult();
-    renderButtons(); // อัปเดตปุ่มคำศัพท์ใหม่
+    
+    // อัปเดตเฉพาะสถานะการเลือกบนปุ่ม
+    document.querySelectorAll('.word-button').forEach(button => {
+        if (button.getAttribute('data-word') === word) {
+            const indicator = button.querySelector('.selection-indicator');
+            if (indicator) {
+                indicator.textContent = selectedWords.includes(word) ? '✔️' : '';
+            }
+        }
+    });
 }
 
 function updateSelectionUI() {
@@ -168,10 +193,31 @@ function updateSelectionUI() {
         elements.selectedWordsContainer.innerHTML = selectedWords.map(word => `
             <span class="selected-word bg-blue-500 text-white px-4 py-2 rounded-full inline-flex items-center m-1">
                 ${word}
-                <button class="ml-2 hover:text-gray-200" onclick="toggleWordSelection('${word}')">&times;</button>
+                <button class="ml-2 hover:text-gray-200" onclick="removeSelectedWord('${word}')">&times;</button>
             </span>
         `).join('');
     }
+}
+
+// เพิ่มฟังก์ชันใหม่สำหรับลบคำจาก selected words
+function removeSelectedWord(word) {
+    const index = selectedWords.indexOf(word);
+    if (index > -1) {
+        selectedWords.splice(index, 1);
+    }
+    
+    updateSelectionUI();
+    updateMixResult();
+    
+    // อัปเดตเฉพาะสถานะการเลือกบนปุ่ม
+    document.querySelectorAll('.word-button').forEach(button => {
+        if (button.getAttribute('data-word') === word) {
+            const indicator = button.querySelector('.selection-indicator');
+            if (indicator) {
+                indicator.textContent = '';
+            }
+        }
+    });
 }
 
 function updateMixResult(text = '') {
@@ -208,7 +254,7 @@ function speakText(text) {
 
 function highlightSpeakingButton(text) {
     document.querySelectorAll('.word-button').forEach(button => {
-        if (button.textContent.trim() === text) {
+        if (button.getAttribute('data-word') === text) {
             button.classList.add('ring-4', 'ring-blue-300');
         }
     });
@@ -234,15 +280,18 @@ function toggleMixingMode() {
     if (isSelectMode) {
         // เมื่ออยู่ในโหมดผสมคำและกด "พูดคำผสม"
         const mixedText = selectedWords.join(' ');
-        speakText(mixedText); // พูดคำผสม
-        selectedWords = []; // เคลียร์คำที่เลือก
-        updateSelectionUI();
-        updateMixResult();
+        if (mixedText.trim()) {
+            speakText(mixedText); // พูดคำผสมเฉพาะเมื่อมีคำที่เลือก
+        }
+        // ไม่ต้องเคลียร์คำที่เลือกหลังจากพูด เพื่อให้ผู้ใช้สามารถพูดซ้ำได้
+        // selectedWords = []; 
     }
 
-    isSelectMode = !isSelectMode; // สลับโหมด
+    // สลับโหมด
+    isSelectMode = !isSelectMode; 
     updateMixingUI();
-    loadCategoryData(); // อัปเดตปุ่มคำศัพท์
+    // โหลดข้อมูลคำศัพท์ใหม่เพื่อแสดงหรือซ่อนเครื่องหมายการเลือก
+    loadCategoryData(); 
 }
 
 function updateMixingUI() {
@@ -270,13 +319,19 @@ function updateMixingUI() {
     // ปิดการใช้งานปุ่มหมวดหมู่เมื่ออยู่ในโหมดผสมคำ
     document.querySelectorAll('.category-button').forEach(button => {
         button.disabled = isSelectMode;
+        // เพิ่มการเปลี่ยนแปลงสีหรือความโปร่งใสเมื่อปุ่มถูกปิดการใช้งาน
+        if (isSelectMode) {
+            button.classList.add('opacity-50');
+        } else {
+            button.classList.remove('opacity-50');
+        }
     });
 }
 
 // Error Handling
 function showError(message) {
     const errorToast = document.createElement('div');
-    errorToast.className = 'fixed bottom-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg';
+    errorToast.className = 'fixed bottom-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg z-50';
     errorToast.textContent = message;
     
     document.body.appendChild(errorToast);
@@ -288,7 +343,7 @@ function showError(message) {
 
 function showToast(message) {
     const toast = document.createElement('div');
-    toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg';
+    toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
     toast.textContent = message;
     
     document.body.appendChild(toast);
@@ -312,8 +367,9 @@ async function addNewWord() {
         return;
     }
 
+    // รวบรวมคำศัพท์ทั้งหมดจากปุ่มที่แสดงอยู่
     const words = Array.from(document.querySelectorAll('.word-button'))
-                      .map(button => button.textContent.trim());
+                      .map(button => button.getAttribute('data-word'));
     
     if (words.includes(newWord)) {
         showError('คำนี้มีอยู่แล้วในระบบ');
@@ -375,7 +431,11 @@ function deleteSelectedWord() {
     // อัปเดต UI
     updateSelectionUI(); // อัปเดตพื้นที่แสดงคำที่เลือก
     updateMixResult(); // อัปเดตผลลัพธ์การผสมคำ
-    renderButtons(); // อัปเดตปุ่มคำศัพท์
+    
+    // อัปเดตปุ่มคำศัพท์ (เคลียร์เครื่องหมายการเลือก)
+    document.querySelectorAll('.selection-indicator').forEach(indicator => {
+        indicator.textContent = '';
+    });
 
     // แสดงข้อความแจ้งเตือน
     showToast('ลบคำที่เลือกสำเร็จ!');
