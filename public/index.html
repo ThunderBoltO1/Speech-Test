@@ -13,21 +13,8 @@
     
     <!-- ResponsiveVoice -->
     <script src="https://code.responsivevoice.org/responsivevoice.js?key=YL7PkzaR"></script>
-    
-    <style>
-        body {
-            font-family: 'IBM Plex Sans Thai', sans-serif;
-        }
-        .word-button {
-            transition: all 0.2s ease;
-        }
-        .speaking {
-            transform: scale(1.05);
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5);
-        }
-    </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 font-['IBM_Plex_Sans_Thai']">
 
     <!-- Header -->
     <header class="bg-blue-600 text-white py-4 shadow-lg">
@@ -50,7 +37,7 @@
     <!-- Main Content -->
     <main class="flex-1 p-4">
         <div id="button-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
-        <div id="selected-words-container" class="mt-4"></div>
+        <div id="selected-words-container" class="mt-4 flex flex-wrap gap-2"></div>
     </main>
 
     <!-- Modals -->

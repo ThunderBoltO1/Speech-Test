@@ -131,7 +131,7 @@ async function loadCategoryData() {
 function renderButtons(words = []) {
     if (elements.buttonContainer) {
         elements.buttonContainer.innerHTML = words.map(word => `
-            <button class="word-button flex-1 text-left bg-blue-500 text-white px-4 py-2 rounded m-2 hover:bg-blue-600 transition-all"
+            <button class="word-button flex-1 text-left bg-blue-500 text-white px-4 py-2 rounded-full m-2 hover:bg-blue-600 transition-all"
                     onclick="${isSelectMode ? `toggleWordSelection('${word}')` : `speakText('${word}')`}">
                 ${word}
                 ${isSelectMode ? `<span class="ml-2">${selectedWords.includes(word) ? '✔️' : ''}</span>` : ''}
@@ -152,7 +152,6 @@ function toggleWordSelection(word) {
     if (!isSelectMode) return;
     
     const index = selectedWords.indexOf(word);
-    
     if (index > -1) {
         selectedWords.splice(index, 1);
     } else {
@@ -167,7 +166,7 @@ function toggleWordSelection(word) {
 function updateSelectionUI() {
     if (elements.selectedWordsContainer) {
         elements.selectedWordsContainer.innerHTML = selectedWords.map(word => `
-            <span class="selected-word bg-green-500 text-white px-2 py-1 rounded m-1">
+            <span class="selected-word bg-blue-500 text-white px-4 py-2 rounded-full inline-flex items-center m-1">
                 ${word}
                 <button class="ml-2 hover:text-gray-200" onclick="toggleWordSelection('${word}')">&times;</button>
             </span>
