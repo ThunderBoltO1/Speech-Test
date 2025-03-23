@@ -186,6 +186,7 @@ function toggleWordSelection(word) {
             if (indicator) {
                 indicator.textContent = selectedWords.includes(word) ? '✔️' : '';
             }
+            button.classList.toggle('bg-green-500', selectedWords.includes(word)); // เปลี่ยนสีเป็นเขียว
         }
     });
 }
@@ -193,7 +194,7 @@ function toggleWordSelection(word) {
 function updateSelectionUI() {
     if (elements.selectedWordsContainer) {
         elements.selectedWordsContainer.innerHTML = selectedWords.map(word => `
-            <span class="selected-word bg-blue-500 text-white px-4 py-2 rounded-full inline-flex items-center m-1">
+            <span class="selected-word bg-green-500 text-white px-4 py-2 rounded-full inline-flex items-center m-1">
                 ${word}
                 <button class="ml-2 hover:text-gray-200" onclick="removeSelectedWord('${word}')">&times;</button>
             </span>
@@ -382,6 +383,7 @@ async function saveToStorage(mixedText) {
 // ปรับปรุง updateMixingUI ให้เพิ่มปุ่มยกเลิกการผสมข้อความกลับมา
 function updateMixingUI() {
     const mixButton = document.getElementById('btn-mix');
+    const cancelMixButton = document.getElementById('btn-cancel-mix');
     const deleteButton = document.getElementById('btn-delete');
 
     if (isSelectMode) {
@@ -389,19 +391,15 @@ function updateMixingUI() {
         mixButton.classList.remove('bg-purple-500');
         mixButton.classList.add('bg-green-500');
 
-        deleteButton.textContent = 'ยกเลิกผสมข้อความ';
-        deleteButton.classList.remove('bg-yellow-500');
-        deleteButton.classList.add('bg-red-500');
-        deleteButton.onclick = cancelMixingMode; // เปลี่ยนฟังก์ชันเป็นยกเลิกการผสมข้อความ
+        cancelMixButton.classList.remove('hidden'); // แสดงปุ่มยกเลิกผสมคำ
+        deleteButton.classList.add('hidden'); // ซ่อนปุ่มลบคำ
     } else {
         mixButton.textContent = 'ผสมคำ';
         mixButton.classList.remove('bg-green-500');
         mixButton.classList.add('bg-purple-500');
 
-        deleteButton.textContent = 'ลบคำ';
-        deleteButton.classList.remove('bg-red-500');
-        deleteButton.classList.add('bg-yellow-500');
-        deleteButton.onclick = deleteWordFromCategory; // เปลี่ยนฟังก์ชันเป็นลบคำจากหมวดหมู่
+        cancelMixButton.classList.add('hidden'); // ซ่อนปุ่มยกเลิกผสมคำ
+        deleteButton.classList.remove('hidden'); // แสดงปุ่มลบคำ
     }
 
     // ปิดการใช้งานปุ่มหมวดหมู่เมื่ออยู่ในโหมดผสมคำ
@@ -416,8 +414,21 @@ function updateMixingUI() {
 }
 
 function toggleWordSelectionMode() {
-    isSelectMode = true;
+    isSelectMode = !isSelectMode;
+    selectedWords = [];
+    updateSelectionUI();
+    updateMixResult();
     updateMixingUI();
+}
+
+// ฟังก์ชันสำหรับยกเลิกโหมดผสมคำ
+function cancelMixingMode() {
+    isSelectMode = false;
+    selectedWords = [];
+    updateSelectionUI();
+    updateMixResult();
+    updateMixingUI();
+    loadCategoryData(); // โหลดข้อมูลหมวดหมู่ปัจจุบันใหม่
 }
 
 // Error Handling
