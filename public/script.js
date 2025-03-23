@@ -230,8 +230,8 @@ function speakText(text) {
             return;
         }
 
-        // แบ่งประโยคยาว ๆ ออกเป็นประโยคสั้น ๆ
-        const sentences = text.split(/[.!?]/).filter(s => s.trim() !== '');
+        // แบ่งข้อความยาวออกเป็นส่วนเล็ก ๆ
+        const sentences = text.match(/[^.!?]+[.!?]*/g) || [text];
         let index = 0;
 
         const speakNextSentence = () => {
@@ -240,7 +240,7 @@ function speakText(text) {
                 isSpeaking = true; // ตั้งค่าเป็นกำลังพูด
                 updateSpeakingUI(true); // แสดงสถานะการพูด
 
-                responsiveVoice.speak(sentence, "Thai Male", {
+                responsiveVoice.speak(sentence, "Thai Female", {
                     onstart: () => {
                         console.log('เริ่มพูด:', sentence);
                         highlightSpeakingButton(sentence);
