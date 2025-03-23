@@ -358,17 +358,25 @@ async function addWordToSheet(word, category) {
 
 // Delete Selected Words
 function deleteSelectedWord() {
+    // ตรวจสอบว่ามีคำที่เลือกหรือไม่
     if (selectedWords.length === 0) {
         showError('ไม่มีคำที่เลือกไว้');
         return;
     }
 
+    // ยืนยันการลบ
     if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบคำที่เลือกทั้งหมด?`)) {
         return;
     }
 
+    // ลบคำที่เลือกทั้งหมด
     selectedWords = [];
-    updateSelectionUI();
-    updateMixResult();
+
+    // อัปเดต UI
+    updateSelectionUI(); // อัปเดตพื้นที่แสดงคำที่เลือก
+    updateMixResult(); // อัปเดตผลลัพธ์การผสมคำ
+    renderButtons(); // อัปเดตปุ่มคำศัพท์
+
+    // แสดงข้อความแจ้งเตือน
     showToast('ลบคำที่เลือกสำเร็จ!');
 }
