@@ -585,7 +585,7 @@ async function deleteWordFromSheet(word, category) {
     const sheetName = CATEGORY_SHEETS[category];
     
     // 1. ดึงข้อมูลทั้งหมดจาก sheet
-    const getUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=COLUMNS`;
+    const getUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=ROWS`;
     
     const getResponse = await fetch(getUrl, {
         headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -596,15 +596,15 @@ async function deleteWordFromSheet(word, category) {
     }
     
     const data = await getResponse.json();
-    if (!data.values || !data.values[0]) {
+    if (!data.values || !data.values.length) {
         throw new Error('ไม่มีข้อมูลใน Sheet');
     }
     
     // 2. กรองคำที่ต้องการลบออก
-    const updatedWords = data.values[0].filter(w => w !== word);
+    const updatedRows = data.values.filter(row => row[0] !== word);
     
     // 3. อัปเดต sheet ด้วยข้อมูลใหม่
-    const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A1:A${updatedWords.length}?valueInputOption=USER_ENTERED`;
+    const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A1:Z${updatedRows.length}?valueInputOption=USER_ENTERED`;
     
     const updateResponse = await fetch(updateUrl, {
         method: 'PUT',
@@ -613,7 +613,7 @@ async function deleteWordFromSheet(word, category) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            values: updatedWords.map(w => [w])
+            values: updatedRows
         })
     });
     
@@ -622,8 +622,8 @@ async function deleteWordFromSheet(word, category) {
     }
     
     // 4. เคลียร์ข้อมูลเก่าที่อาจเหลืออยู่ในแถวล่างสุด
-    if (updatedWords.length < data.values[0].length) {
-        const clearUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A${updatedWords.length + 1}:A${data.values[0].length}:clear`;
+    if (updatedRows.length < data.values.length) {
+        const clearUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A${updatedRows.length + 1}:Z${data.values.length}:clear`;
         
         const clearResponse = await fetch(clearUrl, {
             method: 'POST',
