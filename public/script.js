@@ -229,23 +229,35 @@ function updateMixResult(text = '') {
 // Speech Functions
 function speakText(text) {
     if (typeof responsiveVoice !== 'undefined') {
-        responsiveVoice.speak(text, "Thai Female", {
-            onstart: () => {
-                console.log('เริ่มพูด:', text);
-                highlightSpeakingButton(text);
-            },
-            onend: () => {
-                console.log('พูดเสร็จสิ้น:', text);
-                removeSpeakingHighlight();
-            },
-            onerror: (error) => {
-                console.error('เกิดข้อผิดพลาดในการพูด:', error);
-                showError('ไม่สามารถพูดข้อความได้');
-            }
-        });
+        // Split long text into smaller chunks (sentences)
+        const sentences = text.match(/[^.!?]+[.!?]*/g) || [text];
+        let index = 0;
 
-        // แสดงข้อความที่พูดบน mix-result
-        updateMixResult(text);
+        const speakNextSentence = () => {
+            if (index < sentences.length) {
+                const sentence = sentences[index].trim();
+                responsiveVoice.speak(sentence, "Thai Female", {
+                    onstart: () => {
+                        console.log('เริ่มพูด:', sentence);
+                        highlightSpeakingButton(sentence);
+                    },
+                    onend: () => {
+                        console.log('พูดเสร็จสิ้น:', sentence);
+                        removeSpeakingHighlight();
+                        index++;
+                        speakNextSentence(); // Speak the next sentence
+                    },
+                    onerror: (error) => {
+                        console.error('เกิดข้อผิดพลาดในการพูด:', error);
+                        showError('ไม่สามารถพูดข้อความได้');
+                    }
+                });
+            } else {
+                console.log('พูดข้อความทั้งหมดเสร็จสิ้น');
+            }
+        };
+
+        speakNextSentence(); // Start speaking the first sentence
     } else {
         console.error('ResponsiveVoice.js ไม่พร้อมใช้งาน');
         showError('ไม่สามารถพูดข้อความได้');
@@ -276,32 +288,31 @@ function closeModal() {
     elements.newWordInput.value = '';
 }
 
-// ฟังก์ชันที่ถูกแก้ไขเพื่อให้บันทึกคำผสมเข้า Sheet3 เมื่อพูด
+
 function toggleMixingMode() {
     if (isSelectMode) {
-        // เมื่ออยู่ในโหมดผสมคำและกด "พูดคำผสม"
+
         const mixedText = selectedWords.join(' ');
         if (mixedText.trim()) {
-            // พูดคำผสม
+
             speakText(mixedText);
-            
-            // บันทึกคำผสมลงในหมวด "คลัง" (Sheet3)
+
             saveToStorage(mixedText);
         }
-        // ไม่ต้องเคลียร์คำที่เลือกหลังจากพูด เพื่อให้ผู้ใช้สามารถพูดซ้ำได้
+
     }
 
-    // สลับโหมด
+    
     isSelectMode = !isSelectMode; 
     updateMixingUI();
-    // โหลดข้อมูลคำศัพท์ใหม่เพื่อแสดงหรือซ่อนเครื่องหมายการเลือก
+
     loadCategoryData(); 
 }
 
-// ฟังก์ชันใหม่สำหรับบันทึกคำผสมลงใน "คลัง" (Sheet3)
+
 async function saveToStorage(mixedText) {
     try {
-        // ตรวจสอบว่าคำนี้มีอยู่ใน "คลัง" แล้วหรือไม่
+
         const storageSheet = CATEGORY_SHEETS['คลัง'];
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${storageSheet}?majorDimension=COLUMNS`;
         
