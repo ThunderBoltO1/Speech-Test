@@ -27,14 +27,6 @@ const elements = {
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
-    // ตรวจสอบว่าปุ่มมีอยู่ใน DOM หรือไม่
-    const saveMixButton = document.getElementById('btn-save-mix');
-    if (saveMixButton) {
-        saveMixButton.addEventListener('click', saveMixedWords);
-    } else {
-        console.error('ปุ่ม "บันทึกคำผสม" ไม่พบใน DOM');
-    }
-
     document.querySelectorAll('.category-button').forEach(button => {
         button.addEventListener('click', () => setCategory(button.dataset.category));
     });
@@ -169,6 +161,7 @@ function toggleWordSelection(word) {
     
     updateSelectionUI();
     updateMixResult();
+    renderButtons(); // อัปเดตปุ่มคำศัพท์ใหม่
 }
 
 function updateSelectionUI() {
@@ -239,47 +232,46 @@ function closeModal() {
 }
 
 function toggleMixingMode() {
-    isSelectMode = !isSelectMode;
-    updateMixingUI();
-    
-    if (!isSelectMode) {
+    if (isSelectMode) {
+        // เมื่ออยู่ในโหมดผสมคำและกด "พูดคำผสม"
         const mixedText = selectedWords.join(' ');
-        speakText(mixedText);
-        selectedWords = [];
+        speakText(mixedText); // พูดคำผสม
+        selectedWords = []; // เคลียร์คำที่เลือก
         updateSelectionUI();
         updateMixResult();
     }
 
-    // อัปเดตปุ่มคำศัพท์
-    loadCategoryData();
+    isSelectMode = !isSelectMode; // สลับโหมด
+    updateMixingUI();
+    loadCategoryData(); // อัปเดตปุ่มคำศัพท์
 }
 
 function updateMixingUI() {
-    document.querySelectorAll('.category-button').forEach(button => {
-        button.disabled = isSelectMode;
-    });
-    
     const mixButton = document.getElementById('btn-mix');
+    const deleteButton = document.getElementById('btn-delete');
+
     if (isSelectMode) {
         mixButton.textContent = 'พูดคำผสม';
         mixButton.classList.remove('bg-purple-500');
         mixButton.classList.add('bg-green-500');
-    } else {
-        mixButton.textContent = 'ผสมคำ';
-        mixButton.classList.remove('bg-green-500');
-        mixButton.classList.add('bg-purple-500');
-    }
 
-    const deleteButton = document.getElementById('btn-delete');
-    if (isSelectMode) {
         deleteButton.textContent = 'ลบคำที่เลือก';
         deleteButton.classList.remove('bg-red-500');
         deleteButton.classList.add('bg-yellow-500');
     } else {
+        mixButton.textContent = 'ผสมคำ';
+        mixButton.classList.remove('bg-green-500');
+        mixButton.classList.add('bg-purple-500');
+
         deleteButton.textContent = 'ลบ';
         deleteButton.classList.remove('bg-yellow-500');
         deleteButton.classList.add('bg-red-500');
     }
+
+    // ปิดการใช้งานปุ่มหมวดหมู่เมื่ออยู่ในโหมดผสมคำ
+    document.querySelectorAll('.category-button').forEach(button => {
+        button.disabled = isSelectMode;
+    });
 }
 
 // Error Handling
@@ -362,26 +354,6 @@ async function addWordToSheet(word, category) {
             return;
         }
         throw new Error(`ไม่สามารถบันทึกข้อมูลได้: ${response.statusText}`);
-    }
-}
-
-// Save Mixed Words
-async function saveMixedWords() {
-    if (selectedWords.length === 0) {
-        showError('ไม่มีคำที่เลือกไว้');
-        return;
-    }
-
-    const mixedText = selectedWords.join(' ');
-    try {
-        await addWordToSheet(mixedText, 'คลัง'); // บันทึกคำผสมลงใน Sheet3
-        showToast('บันทึกคำผสมสำเร็จ!');
-        selectedWords = []; // เคลียร์คำที่เลือก
-        updateSelectionUI();
-        updateMixResult();
-    } catch (error) {
-        showError('เกิดข้อผิดพลาดในการบันทึกคำผสม: ' + error.message);
-        console.error('Error saving mixed words:', error);
     }
 }
 
