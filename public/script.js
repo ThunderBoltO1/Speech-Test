@@ -387,22 +387,20 @@ function updateMixingUI() {
     const deleteButton = document.getElementById('btn-delete');
 
     if (isSelectMode) {
-        mixButton.textContent = 'พูดคำผสม';
-        mixButton.classList.remove('bg-purple-500');
-        mixButton.classList.add('bg-green-500');
-
+        mixButton.classList.add('hidden'); // ซ่อนปุ่มพูดคำผสม
         cancelMixButton.classList.remove('hidden'); // แสดงปุ่มยกเลิกผสมคำ
-        deleteButton.classList.add('hidden'); // ซ่อนปุ่มลบคำ
+        deleteButton.textContent = 'ยกเลิกการลบคำ'; // เปลี่ยนข้อความปุ่มลบคำ
+        deleteButton.classList.add('bg-red-500');
+        deleteButton.classList.remove('bg-yellow-500');
     } else {
-        mixButton.textContent = 'ผสมคำ';
-        mixButton.classList.remove('bg-green-500');
-        mixButton.classList.add('bg-purple-500');
-
+        mixButton.classList.remove('hidden'); // แสดงปุ่มพูดคำผสม
         cancelMixButton.classList.add('hidden'); // ซ่อนปุ่มยกเลิกผสมคำ
-        deleteButton.classList.remove('hidden'); // แสดงปุ่มลบคำ
+        deleteButton.textContent = 'ลบคำ'; // เปลี่ยนข้อความปุ่มกลับเป็นลบคำ
+        deleteButton.classList.remove('bg-red-500');
+        deleteButton.classList.add('bg-yellow-500');
     }
 
-    // ปิดการใช้งานปุ่มหมวดหมู่เมื่ออยู่ในโหมดผสมคำ
+    // ปิดการใช้งานปุ่มหมวดหมู่เมื่ออยู่ในโหมดลบคำหรือผสมคำ
     document.querySelectorAll('.category-button').forEach(button => {
         button.disabled = isSelectMode;
         if (isSelectMode) {
@@ -604,7 +602,7 @@ async function deleteWordFromSheet(word, category) {
     const updatedRows = data.values.filter(row => row[0] !== word);
     
     // 3. อัปเดต sheet ด้วยข้อมูลใหม่
-    const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A1:Z${updatedRows.length}?valueInputOption=USER_ENTERED`;
+    const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A1:A${updatedRows.length}?valueInputOption=USER_ENTERED`;
     
     const updateResponse = await fetch(updateUrl, {
         method: 'PUT',
@@ -623,7 +621,7 @@ async function deleteWordFromSheet(word, category) {
     
     // 4. เคลียร์ข้อมูลเก่าที่อาจเหลืออยู่ในแถวล่างสุด
     if (updatedRows.length < data.values.length) {
-        const clearUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A${updatedRows.length + 1}:Z${data.values.length}:clear`;
+        const clearUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A${updatedRows.length + 1}:A${data.values.length}:clear`;
         
         const clearResponse = await fetch(clearUrl, {
             method: 'POST',
