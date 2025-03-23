@@ -292,12 +292,12 @@ function closeModal() {
     elements.newWordInput.value = '';
 }
 
-
+// ปรับปรุง toggleMixingMode ให้พูดคำที่ผสมเมื่อกดปุ่ม "ผสมคำ"
 function toggleMixingMode() {
     if (isSelectMode) {
         const mixedText = selectedWords.join(' ');
         if (mixedText.trim()) {
-            speakText(mixedText);
+            speakText(mixedText); // เพิ่มคำสั่งพูดคำที่ผสม
             saveToStorage(mixedText);
         }
     }
@@ -416,12 +416,23 @@ function updateMixingUI() {
     });
 }
 
+// ปรับปรุง toggleWordSelectionMode ให้แยกการทำงานของปุ่ม "ลบคำ" ออกจาก "ผสมคำ"
 function toggleWordSelectionMode() {
-    isSelectMode = !isSelectMode;
-    selectedWords = [];
-    updateSelectionUI();
-    updateMixResult();
-    updateMixingUI();
+    if (isSelectMode) {
+        // ยกเลิกโหมดลบคำ
+        isSelectMode = false;
+        selectedWords = [];
+        updateSelectionUI();
+        updateMixResult();
+        updateMixingUI();
+    } else {
+        // เข้าสู่โหมดลบคำ
+        isSelectMode = true;
+        selectedWords = [];
+        updateSelectionUI();
+        updateMixResult();
+        updateMixingUI();
+    }
 }
 
 // ฟังก์ชันสำหรับยกเลิกโหมดผสมคำ
