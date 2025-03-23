@@ -380,21 +380,26 @@ async function saveToStorage(mixedText) {
     }
 }
 
-// ปรับปรุง updateMixingUI ให้เพิ่มปุ่มยกเลิกการผสมข้อความกลับมา
+// ปรับปรุง updateMixingUI ให้ตรวจสอบว่าปุ่ม cancelMixButton มีอยู่ใน DOM ก่อนใช้งาน
 function updateMixingUI() {
     const mixButton = document.getElementById('btn-mix');
     const cancelMixButton = document.getElementById('btn-cancel-mix');
     const deleteButton = document.getElementById('btn-delete');
 
+    if (!mixButton || !deleteButton) {
+        console.error('Missing required DOM elements for updateMixingUI');
+        return;
+    }
+
     if (isSelectMode) {
         mixButton.classList.add('hidden'); // ซ่อนปุ่มพูดคำผสม
-        cancelMixButton.classList.remove('hidden'); // แสดงปุ่มยกเลิกผสมคำ
+        if (cancelMixButton) cancelMixButton.classList.remove('hidden'); // แสดงปุ่มยกเลิกผสมคำ
         deleteButton.textContent = 'ยกเลิกการลบคำ'; // เปลี่ยนข้อความปุ่มลบคำ
         deleteButton.classList.add('bg-red-500');
         deleteButton.classList.remove('bg-yellow-500');
     } else {
         mixButton.classList.remove('hidden'); // แสดงปุ่มพูดคำผสม
-        cancelMixButton.classList.add('hidden'); // ซ่อนปุ่มยกเลิกผสมคำ
+        if (cancelMixButton) cancelMixButton.classList.add('hidden'); // ซ่อนปุ่มยกเลิกผสมคำ
         deleteButton.textContent = 'ลบคำ'; // เปลี่ยนข้อความปุ่มกลับเป็นลบคำ
         deleteButton.classList.remove('bg-red-500');
         deleteButton.classList.add('bg-yellow-500');
