@@ -15,6 +15,7 @@ let tokenExpiry = null;
 let currentCategory = 'ทั่วไป';
 let selectedWords = [];
 let isSelectMode = false;
+let isMixMode = false; // เพิ่มตัวแปรสำหรับแยกโหมดผสมคำและลบคำ
 
 // DOM Elements
 const elements = {
@@ -33,10 +34,58 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('btn-add').addEventListener('click', openModal);
     document.getElementById('btn-mix').addEventListener('click', toggleMixingMode);
-    document.getElementById('btn-delete').addEventListener('click', toggleWordSelectionMode);
+    document.getElementById('btn-delete').addEventListener('click', toggleDeleteMode);
+    
+    // เพิ่ม event listener สำหรับปุ่มยกเลิกผสมคำและปุ่มพูดผสมคำ
+    if (document.getElementById('btn-cancel-mix')) {
+        document.getElementById('btn-cancel-mix').addEventListener('click', cancelMixingMode);
+    }
+    
+    // เพิ่ม Event Listener สำหรับปุ่มพูดผสมคำ (จะสร้างภายหลัง)
+    if (document.getElementById('btn-speak-mix')) {
+        document.getElementById('btn-speak-mix').addEventListener('click', speakMixedWords);
+    }
     
     handleAuthResponse();
+    
+    // สร้างปุ่มพูดผสมคำถ้ายังไม่มี
+    createSpeakMixButton();
 });
+
+// สร้างปุ่มพูดผสมคำ
+function createSpeakMixButton() {
+    // ตรวจสอบว่ามีปุ่มนี้อยู่แล้วหรือไม่
+    if (!document.getElementById('btn-speak-mix')) {
+        const buttonContainer = document.querySelector('.button-group') || document.querySelector('.flex.justify-center');
+        
+        if (buttonContainer) {
+            const speakMixButton = document.createElement('button');
+            speakMixButton.id = 'btn-speak-mix';
+            speakMixButton.className = 'bg-purple-500 text-white px-4 py-2 rounded mr-2 hidden'; // เริ่มต้นให้ซ่อนไว้
+            speakMixButton.textContent = 'พูดผสมคำ';
+            speakMixButton.addEventListener('click', speakMixedWords);
+            
+            // แทรกปุ่มไว้ก่อนปุ่มยกเลิกผสมคำ (ถ้ามี)
+            const cancelMixButton = document.getElementById('btn-cancel-mix');
+            if (cancelMixButton) {
+                buttonContainer.insertBefore(speakMixButton, cancelMixButton);
+            } else {
+                buttonContainer.appendChild(speakMixButton);
+            }
+        }
+    }
+}
+
+// ฟังก์ชันสำหรับพูดคำที่ผสมและบันทึกลงคลัง
+function speakMixedWords() {
+    const mixedText = selectedWords.join(' ');
+    if (mixedText.trim()) {
+        speakText(mixedText);
+        saveToStorage(mixedText);
+    } else {
+        showError('ยังไม่ได้เลือกคำสำหรับผสม');
+    }
+}
 
 // Authentication Functions
 function handleAuthResponse() {
@@ -219,6 +268,7 @@ function removeSelectedWord(word) {
             if (indicator) {
                 indicator.textContent = '';
             }
+            button.classList.remove('bg-green-500'); // ลบ class เพื่อเปลี่ยนสีกลับ
         }
     });
 }
@@ -292,25 +342,99 @@ function closeModal() {
     elements.newWordInput.value = '';
 }
 
-// ปรับปรุง toggleMixingMode ให้พูดคำที่ผสมเมื่อกดปุ่ม "ผสมคำ"
+// ปรับปรุง toggleMixingMode เพื่อเปิดโหมดผสมคำ
 function toggleMixingMode() {
-    if (isSelectMode) {
-        const mixedText = selectedWords.join(' ');
-        if (mixedText.trim()) {
-            speakText(mixedText); // เพิ่มคำสั่งพูดคำที่ผสม
-            saveToStorage(mixedText);
-        }
+    // ถ้าอยู่ในโหมดลบคำ ให้ออกจากโหมดลบคำก่อน
+    if (isSelectMode && !isMixMode) {
+        isSelectMode = false;
     }
-
-    isSelectMode = !isSelectMode;
+    
+    // สลับสถานะโหมดผสมคำ
+    isMixMode = !isMixMode;
+    isSelectMode = isMixMode; // ใช้ isSelectMode เพื่อความเข้ากันได้กับโค้ดเดิม
+    
+    // รีเซ็ตคำที่เลือกเมื่อเข้า/ออกโหมดผสมคำ
+    selectedWords = [];
+    updateSelectionUI();
+    updateMixResult();
+    
+    // อัปเดต UI ตามโหมดใหม่
     updateMixingUI();
-
-    // โหลดข้อมูลจากทุกหมวดหมู่เมื่อเข้าสู่โหมดผสมคำ
-    if (isSelectMode) {
+    
+    // โหลดข้อมูลตามโหมด
+    if (isMixMode) {
         loadAllCategoriesData();
     } else {
         loadCategoryData();
     }
+}
+
+// ฟังก์ชันสำหรับโหมดลบคำ
+function toggleDeleteMode() {
+    // ถ้าอยู่ในโหมดผสมคำ ให้ออกจากโหมดผสมคำก่อน
+    if (isSelectMode && isMixMode) {
+        isMixMode = false;
+    }
+    
+    // สลับสถานะโหมดลบคำ
+    isSelectMode = !isSelectMode;
+    
+    if (isSelectMode) {
+        // เข้าสู่โหมดลบคำ
+        selectedWords = [];
+        updateSelectionUI();
+        updateMixResult();
+    } else {
+        // ออกจากโหมดลบคำ
+        if (selectedWords.length > 0) {
+            // ถามยืนยันก่อนลบ
+            if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบคำที่เลือกทั้งหมด ${selectedWords.length} คำออกจากหมวดหมู่ "${currentCategory}"?`)) {
+                deleteSelectedWords();
+            } else {
+                // ยกเลิกการลบและออกจากโหมด
+                selectedWords = [];
+                updateSelectionUI();
+                updateMixResult();
+            }
+        }
+    }
+    
+    // อัปเดต UI ตามโหมดใหม่
+    updateDeleteModeUI();
+}
+
+// ฟังก์ชันแยกสำหรับอัปเดต UI ในโหมดลบคำ
+function updateDeleteModeUI() {
+    const deleteButton = document.getElementById('btn-delete');
+    const mixButton = document.getElementById('btn-mix');
+    
+    if (!deleteButton || !mixButton) return;
+    
+    if (isSelectMode && !isMixMode) {
+        // โหมดลบคำ
+        deleteButton.textContent = 'ลบคำที่เลือก';
+        deleteButton.classList.add('bg-red-500');
+        deleteButton.classList.remove('bg-yellow-500');
+        mixButton.classList.add('opacity-50');
+        mixButton.disabled = true;
+    } else {
+        // โหมดปกติ
+        deleteButton.textContent = 'ลบคำ';
+        deleteButton.classList.remove('bg-red-500');
+        deleteButton.classList.add('bg-yellow-500');
+        mixButton.classList.remove('opacity-50');
+        mixButton.disabled = false;
+    }
+    
+    // ปิดการใช้งานปุ่มหมวดหมู่เมื่ออยู่ในโหมดลบคำ
+    document.querySelectorAll('.category-button').forEach(button => {
+        button.disabled = isSelectMode && !isMixMode;
+        if (isSelectMode && !isMixMode) {
+            button.classList.add('opacity-50');
+        } else {
+            button.classList.remove('opacity-50');
+        }
+    });
 }
 
 // ฟังก์ชันใหม่สำหรับโหลดข้อมูลจากทุกหมวดหมู่
@@ -340,16 +464,17 @@ async function loadAllCategoriesData() {
                 allWords.push(...filteredWords);
             }
         }
-        renderButtons(allWords);
+        renderButtons([...new Set(allWords)]); // กำจัดคำซ้ำ
     } catch (error) {
         console.error('Error loading all categories data:', error);
         showError('ไม่สามารถโหลดข้อมูลจากทุกหมวดหมู่ได้: ' + error.message);
     }
 }
 
+// ปรับปรุงฟังก์ชันบันทึกลงคลัง
 async function saveToStorage(mixedText) {
     try {
-
+        // ตรวจสอบว่ามีคำอยู่แล้วหรือไม่
         const storageSheet = CATEGORY_SHEETS['คลัง'];
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${storageSheet}?majorDimension=COLUMNS`;
         
@@ -367,6 +492,7 @@ async function saveToStorage(mixedText) {
         // ถ้าคำผสมนี้มีอยู่แล้ว ไม่ต้องบันทึกซ้ำ
         if (existingWords.includes(mixedText)) {
             console.log('คำผสมนี้มีอยู่ใน "คลัง" แล้ว');
+            showToast('คำผสมนี้มีอยู่ในคลังแล้ว');
             return;
         }
         
@@ -380,9 +506,10 @@ async function saveToStorage(mixedText) {
     }
 }
 
-// ปรับปรุง updateMixingUI ให้ตรวจสอบว่าปุ่ม cancelMixButton มีอยู่ใน DOM ก่อนใช้งาน
+// ปรับปรุง updateMixingUI สำหรับโหมดผสมคำ
 function updateMixingUI() {
     const mixButton = document.getElementById('btn-mix');
+    const speakMixButton = document.getElementById('btn-speak-mix');
     const cancelMixButton = document.getElementById('btn-cancel-mix');
     const deleteButton = document.getElementById('btn-delete');
 
@@ -391,24 +518,45 @@ function updateMixingUI() {
         return;
     }
 
-    if (isSelectMode) {
-        mixButton.classList.add('hidden'); // ซ่อนปุ่มพูดคำผสม
-        if (cancelMixButton) cancelMixButton.classList.remove('hidden'); // แสดงปุ่มยกเลิกผสมคำ
-        deleteButton.textContent = 'ยกเลิกการลบคำ'; // เปลี่ยนข้อความปุ่มลบคำ
-        deleteButton.classList.add('bg-red-500');
-        deleteButton.classList.remove('bg-yellow-500');
+    // สร้างปุ่มที่ยังไม่มี
+    if (!speakMixButton) createSpeakMixButton();
+    
+    if (isMixMode) {
+        // เข้าสู่โหมดผสมคำ
+        mixButton.classList.add('hidden'); // ซ่อนปุ่มเข้าโหมดผสมคำ
+        
+        // แสดงปุ่มพูดผสมคำ
+        if (document.getElementById('btn-speak-mix')) {
+            document.getElementById('btn-speak-mix').classList.remove('hidden');
+        }
+        
+        // แสดงปุ่มยกเลิกผสมคำ
+        if (cancelMixButton) cancelMixButton.classList.remove('hidden');
+        
+        // ปิดการใช้งานปุ่มลบคำ
+        deleteButton.classList.add('opacity-50');
+        deleteButton.disabled = true;
     } else {
-        mixButton.classList.remove('hidden'); // แสดงปุ่มพูดคำผสม
-        if (cancelMixButton) cancelMixButton.classList.add('hidden'); // ซ่อนปุ่มยกเลิกผสมคำ
-        deleteButton.textContent = 'ลบคำ'; // เปลี่ยนข้อความปุ่มกลับเป็นลบคำ
-        deleteButton.classList.remove('bg-red-500');
-        deleteButton.classList.add('bg-yellow-500');
+        // ออกจากโหมดผสมคำ
+        mixButton.classList.remove('hidden'); // แสดงปุ่มเข้าโหมดผสมคำ
+        
+        // ซ่อนปุ่มพูดผสมคำ
+        if (document.getElementById('btn-speak-mix')) {
+            document.getElementById('btn-speak-mix').classList.add('hidden');
+        }
+        
+        // ซ่อนปุ่มยกเลิกผสมคำ
+        if (cancelMixButton) cancelMixButton.classList.add('hidden');
+        
+        // เปิดการใช้งานปุ่มลบคำ
+        deleteButton.classList.remove('opacity-50');
+        deleteButton.disabled = false;
     }
 
-    // ปิดการใช้งานปุ่มหมวดหมู่เมื่ออยู่ในโหมดลบคำหรือผสมคำ
+    // ปิดการใช้งานปุ่มหมวดหมู่เมื่ออยู่ในโหมดผสมคำ
     document.querySelectorAll('.category-button').forEach(button => {
-        button.disabled = isSelectMode;
-        if (isSelectMode) {
+        button.disabled = isMixMode;
+        if (isMixMode) {
             button.classList.add('opacity-50');
         } else {
             button.classList.remove('opacity-50');
@@ -416,28 +564,10 @@ function updateMixingUI() {
     });
 }
 
-// ปรับปรุง toggleWordSelectionMode ให้แยกการทำงานของปุ่ม "ลบคำ" ออกจาก "ผสมคำ"
-function toggleWordSelectionMode() {
-    if (isSelectMode) {
-        // ยกเลิกโหมดลบคำ
-        isSelectMode = false;
-        selectedWords = [];
-        updateSelectionUI();
-        updateMixResult();
-        updateMixingUI();
-    } else {
-        // เข้าสู่โหมดลบคำ
-        isSelectMode = true;
-        selectedWords = [];
-        updateSelectionUI();
-        updateMixResult();
-        updateMixingUI();
-    }
-}
-
 // ฟังก์ชันสำหรับยกเลิกโหมดผสมคำ
 function cancelMixingMode() {
     isSelectMode = false;
+    isMixMode = false;
     selectedWords = [];
     updateSelectionUI();
     updateMixResult();
@@ -529,121 +659,84 @@ async function addWordToSheet(word, category) {
     }
 }
 
-// แก้ไขฟังก์ชัน deleteSelectedWords ให้ทำงานได้ไม่ว่าจะอยู่ในโหมดใด
-function deleteSelectedWords() {
-    if (isSelectMode) {
-        if (selectedWords.length === 0) {
-            showError('ไม่มีคำที่เลือกไว้');
-            return;
-        }
-        if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบคำที่เลือกทั้งหมดออกจากหมวดหมู่ "${currentCategory}"?`)) {
-            return;
-        }
-        const deletePromises = selectedWords.map(word => deleteWordFromSheet(word, currentCategory));
-        Promise.all(deletePromises)
-            .then(() => {
-                showToast('ลบคำศัพท์ออกจากหมวดหมู่เรียบร้อยแล้ว');
-                selectedWords = [];
-                updateSelectionUI();
-                updateMixResult('');
-                loadCategoryData();
-            })
-            .catch(error => {
-                console.error('Error deleting selected words:', error);
-                showError('เกิดข้อผิดพลาดในการลบคำศัพท์: ' + error.message);
-            });
-    } else {
-        deleteWordFromCategory();
-    }
-}
-
-// ฟังก์ชันใหม่สำหรับลบคำศัพท์ออกจากหมวดหมู่
-async function deleteWordFromCategory() {
-    // เปิดหน้าต่างให้เลือกคำที่ต้องการลบ
-    const wordToDelete = prompt('กรุณาระบุคำที่ต้องการลบออกจากหมวดหมู่:');
-    
-    if (!wordToDelete || wordToDelete.trim() === '') {
-        return;
-    }
-    
-    // ตรวจสอบว่าคำนี้มีอยู่ในหมวดหมู่หรือไม่
-    const words = Array.from(document.querySelectorAll('.word-button'))
-                      .map(button => button.getAttribute('data-word'));
-    
-    if (!words.includes(wordToDelete)) {
-        showError('ไม่พบคำนี้ในหมวดหมู่ปัจจุบัน');
-        return;
-    }
-    
-    // ถามยืนยันก่อนลบ
-    if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบคำ "${wordToDelete}" ออกจากหมวดหมู่ "${currentCategory}"?`)) {
+// ปรับปรุงฟังก์ชัน deleteSelectedWords
+async function deleteSelectedWords() {
+    if (selectedWords.length === 0) {
+        showError('ไม่มีคำที่เลือกไว้');
         return;
     }
     
     try {
-        await deleteWordFromSheet(wordToDelete, currentCategory);
-        showToast('ลบคำศัพท์ออกจากหมวดหมู่เรียบร้อยแล้ว');
-        loadCategoryData(); // โหลดข้อมูลใหม่
+        // สร้าง Array ของ Promise สำหรับการลบคำแต่ละคำ
+        const deletePromises = selectedWords.map(word => deleteWordFromSheet(word, currentCategory));
+        
+        // รอให้ทุก Promise เสร็จสิ้น
+        await Promise.all(deletePromises);
+        
+        showToast(`ลบคำศัพท์ ${selectedWords.length} คำออกจากหมวดหมู่เรียบร้อยแล้ว`);
+        
+        // เคลียร์คำที่เลือกและออกจากโหมดลบคำ
+        selectedWords = [];
+        isSelectMode = false;
+        updateSelectionUI();
+        updateMixResult('');
+        updateDeleteModeUI();
+        
+        // โหลดข้อมูลใหม่
+        loadCategoryData();
     } catch (error) {
-        console.error('Error deleting word:', error);
-        showError('เกิดข้อผิดพลาดในการลบคำศัพท์: ' + error.message);
+        console.error('Error deleting selected words:', error);
+        showError('เกิดข้อผิดพลาดในการลบคำที่เลือก: ' + error.message);
     }
 }
 
-// ฟังก์ชันสำหรับลบคำออกจาก Sheet
+// เพิ่มฟังก์ชันลบคำออกจาก Google Sheet
 async function deleteWordFromSheet(word, category) {
+    // ดึงชื่อชีทตามหมวดหมู่
     const sheetName = CATEGORY_SHEETS[category];
     
-    // 1. ดึงข้อมูลทั้งหมดจาก sheet
-    const getUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=ROWS`;
-    
-    const getResponse = await fetch(getUrl, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-    });
-    
-    if (!getResponse.ok) {
-        throw new Error(`ไม่สามารถดึงข้อมูลได้: ${getResponse.statusText}`);
-    }
-    
-    const data = await getResponse.json();
-    if (!data.values || !data.values.length) {
-        throw new Error('ไม่มีข้อมูลใน Sheet');
-    }
-    
-    // 2. กรองคำที่ต้องการลบออก
-    const updatedRows = data.values.filter(row => row[0] !== word);
-    
-    // 3. อัปเดต sheet ด้วยข้อมูลใหม่
-    const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A1:A${updatedRows.length}?valueInputOption=USER_ENTERED`;
-    
-    const updateResponse = await fetch(updateUrl, {
-        method: 'PUT',
-        headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            values: updatedRows
-        })
-    });
-    
-    if (!updateResponse.ok) {
-        throw new Error(`ไม่สามารถอัปเดตข้อมูลได้: ${updateResponse.statusText}`);
-    }
-    
-    // 4. เคลียร์ข้อมูลเก่าที่อาจเหลืออยู่ในแถวล่างสุด
-    if (updatedRows.length < data.values.length) {
-        const clearUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A${updatedRows.length + 1}:A${data.values.length}:clear`;
-        
-        const clearResponse = await fetch(clearUrl, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
+    try {
+        // 1. ดึงข้อมูลทั้งหมดจากชีทปัจจุบัน
+        const getUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=COLUMNS`;
+        const getResponse = await fetch(getUrl, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         
-        if (!clearResponse.ok) {
-            console.warn('ไม่สามารถเคลียร์ข้อมูลเก่าได้', clearResponse.statusText);
+        if (!getResponse.ok) {
+            throw new Error(`ไม่สามารถดึงข้อมูลชีทได้: ${getResponse.statusText}`);
         }
+        
+        const data = await getResponse.json();
+        if (!data.values || !data.values[0]) {
+            throw new Error('ไม่พบข้อมูลในชีท');
+        }
+        
+        // 2. สร้างรายการคำใหม่โดยไม่รวมคำที่ต้องการลบ
+        const words = data.values[0];
+        const updatedWords = words.filter(item => item !== word);
+        
+        // 3. อัปเดตชีทด้วยข้อมูลใหม่
+        const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A:A?valueInputOption=USER_ENTERED`;
+        const updateResponse = await fetch(updateUrl, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                range: `${sheetName}!A:A`,
+                majorDimension: 'COLUMNS',
+                values: [updatedWords]
+            })
+        });
+        
+        if (!updateResponse.ok) {
+            throw new Error(`ไม่สามารถอัปเดตชีทได้: ${updateResponse.statusText}`);
+        }
+        
+        return true;
+    } catch (error) {
+        console.error(`Error deleting word '${word}' from category '${category}':`, error);
+        throw error;
     }
 }
