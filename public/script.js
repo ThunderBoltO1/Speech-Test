@@ -379,74 +379,6 @@ async function saveToStorage(mixedText) {
     }
 }
 
-// ฟังก์ชันใหม่สำหรับยกเลิกการผสมข้อความ
-function cancelMixingMode() {
-    isSelectMode = false;
-    selectedWords = [];
-    updateSelectionUI();
-    updateMixResult();
-    updateMixingUI();
-    loadCategoryData(); // โหลดข้อมูลหมวดหมู่ปัจจุบันใหม่
-}
-
-// ปรับปรุง deleteWordFromSheet ให้ลบข้อมูลจาก Google Sheets ได้ถูกต้อง
-async function deleteWordFromSheet(word, category) {
-    const sheetName = CATEGORY_SHEETS[category];
-    
-    // 1. ดึงข้อมูลทั้งหมดจาก sheet
-    const getUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=ROWS`;
-    
-    const getResponse = await fetch(getUrl, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-    });
-    
-    if (!getResponse.ok) {
-        throw new Error(`ไม่สามารถดึงข้อมูลได้: ${getResponse.statusText}`);
-    }
-    
-    const data = await getResponse.json();
-    if (!data.values || !data.values.length) {
-        throw new Error('ไม่มีข้อมูลใน Sheet');
-    }
-    
-    // 2. กรองคำที่ต้องการลบออก
-    const updatedRows = data.values.filter(row => row[0] !== word);
-    
-    // 3. อัปเดต sheet ด้วยข้อมูลใหม่
-    const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A1:Z${updatedRows.length}?valueInputOption=USER_ENTERED`;
-    
-    const updateResponse = await fetch(updateUrl, {
-        method: 'PUT',
-        headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            values: updatedRows
-        })
-    });
-    
-    if (!updateResponse.ok) {
-        throw new Error(`ไม่สามารถอัปเดตข้อมูลได้: ${updateResponse.statusText}`);
-    }
-    
-    // 4. เคลียร์ข้อมูลเก่าที่อาจเหลืออยู่ในแถวล่างสุด
-    if (updatedRows.length < data.values.length) {
-        const clearUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A${updatedRows.length + 1}:Z${data.values.length}:clear`;
-        
-        const clearResponse = await fetch(clearUrl, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
-        });
-        
-        if (!clearResponse.ok) {
-            console.warn('ไม่สามารถเคลียร์ข้อมูลเก่าได้', clearResponse.statusText);
-        }
-    }
-}
-
 // ปรับปรุง updateMixingUI ให้เพิ่มปุ่มยกเลิกการผสมข้อความกลับมา
 function updateMixingUI() {
     const mixButton = document.getElementById('btn-mix');
@@ -483,29 +415,34 @@ function updateMixingUI() {
     });
 }
 
+function toggleWordSelectionMode() {
+    isSelectMode = true;
+    updateMixingUI();
+}
+
 // Error Handling
 function showError(message) {
-    const errorPopup = document.createElement('div');
-    errorPopup.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50';
-    errorPopup.innerHTML = `
-        <div class="bg-red-500 text-white p-6 rounded-lg shadow-lg">
-            <p>${message}</p>
-            <button class="mt-4 bg-white text-red-500 px-4 py-2 rounded" onclick="this.parentElement.parentElement.remove()">ปิด</button>
-        </div>
-    `;
-    document.body.appendChild(errorPopup);
+    const errorToast = document.createElement('div');
+    errorToast.className = 'fixed bottom-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg z-50';
+    errorToast.textContent = message;
+    
+    document.body.appendChild(errorToast);
+    
+    setTimeout(() => {
+        errorToast.remove();
+    }, 5000);
 }
 
 function showToast(message) {
-    const toastPopup = document.createElement('div');
-    toastPopup.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50';
-    toastPopup.innerHTML = `
-        <div class="bg-green-500 text-white p-6 rounded-lg shadow-lg">
-            <p>${message}</p>
-            <button class="mt-4 bg-white text-green-500 px-4 py-2 rounded" onclick="this.parentElement.parentElement.remove()">ปิด</button>
-        </div>
-    `;
-    document.body.appendChild(toastPopup);
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+    toast.textContent = message;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
 }
 
 // Initialize
@@ -637,7 +574,7 @@ async function deleteWordFromSheet(word, category) {
     const sheetName = CATEGORY_SHEETS[category];
     
     // 1. ดึงข้อมูลทั้งหมดจาก sheet
-    const getUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=ROWS`;
+    const getUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=COLUMNS`;
     
     const getResponse = await fetch(getUrl, {
         headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -648,15 +585,15 @@ async function deleteWordFromSheet(word, category) {
     }
     
     const data = await getResponse.json();
-    if (!data.values || !data.values.length) {
+    if (!data.values || !data.values[0]) {
         throw new Error('ไม่มีข้อมูลใน Sheet');
     }
     
     // 2. กรองคำที่ต้องการลบออก
-    const updatedRows = data.values.filter(row => row[0] !== word);
+    const updatedWords = data.values[0].filter(w => w !== word);
     
     // 3. อัปเดต sheet ด้วยข้อมูลใหม่
-    const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A1:Z${updatedRows.length}?valueInputOption=USER_ENTERED`;
+    const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A1:A${updatedWords.length}?valueInputOption=USER_ENTERED`;
     
     const updateResponse = await fetch(updateUrl, {
         method: 'PUT',
@@ -665,7 +602,7 @@ async function deleteWordFromSheet(word, category) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            values: updatedRows
+            values: updatedWords.map(w => [w])
         })
     });
     
@@ -674,8 +611,8 @@ async function deleteWordFromSheet(word, category) {
     }
     
     // 4. เคลียร์ข้อมูลเก่าที่อาจเหลืออยู่ในแถวล่างสุด
-    if (updatedRows.length < data.values.length) {
-        const clearUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A${updatedRows.length + 1}:Z${data.values.length}:clear`;
+    if (updatedWords.length < data.values[0].length) {
+        const clearUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A${updatedWords.length + 1}:A${data.values[0].length}:clear`;
         
         const clearResponse = await fetch(clearUrl, {
             method: 'POST',
