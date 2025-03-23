@@ -532,31 +532,27 @@ async function addWordToSheet(word, category) {
 // แก้ไขฟังก์ชัน deleteSelectedWords ให้ทำงานได้ไม่ว่าจะอยู่ในโหมดใด
 function deleteSelectedWords() {
     if (isSelectMode) {
-        // ในโหมดผสมคำ: ลบคำที่เลือกไว้
         if (selectedWords.length === 0) {
             showError('ไม่มีคำที่เลือกไว้');
             return;
         }
-
-        if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบคำที่เลือกทั้งหมดออกจากรายการเลือก?`)) {
+        if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบคำที่เลือกทั้งหมดออกจากหมวดหมู่ "${currentCategory}"?`)) {
             return;
         }
-
-        // ลบคำที่เลือกออกจากรายการ
-        selectedWords = [];
-
-        // อัปเดต UI
-        updateSelectionUI();
-        updateMixResult();
-        
-        // อัปเดตเครื่องหมายการเลือกบนปุ่มคำศัพท์
-        document.querySelectorAll('.selection-indicator').forEach(indicator => {
-            indicator.textContent = '';
-        });
-        
-        showToast('ลบคำที่เลือกออกจากรายการเรียบร้อยแล้ว');
+        const deletePromises = selectedWords.map(word => deleteWordFromSheet(word, currentCategory));
+        Promise.all(deletePromises)
+            .then(() => {
+                showToast('ลบคำศัพท์ออกจากหมวดหมู่เรียบร้อยแล้ว');
+                selectedWords = [];
+                updateSelectionUI();
+                updateMixResult('');
+                loadCategoryData();
+            })
+            .catch(error => {
+                console.error('Error deleting selected words:', error);
+                showError('เกิดข้อผิดพลาดในการลบคำศัพท์: ' + error.message);
+            });
     } else {
-        // ในโหมดปกติ: ลบคำศัพท์ออกจากหมวดหมู่
         deleteWordFromCategory();
     }
 }
