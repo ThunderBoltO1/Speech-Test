@@ -13,29 +13,16 @@
     
     <!-- ResponsiveVoice -->
     <script src="https://code.responsivevoice.org/responsivevoice.js?key=YL7PkzaR"></script>
-    
-    <style>
-        body {
-            font-family: 'IBM Plex Sans Thai', sans-serif;
-            font-size: 1.25rem; /* Increase base font size */
-        }
-        .word-button {
-            transition: all 0.2s ease;
-            font-size: 1.25rem; /* Increase font size for buttons */
-        }
-        .speaking {
-            transform: scale(1.05);
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5); /* Keep highlight color blue */
-        }
-    </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 font-['IBM_Plex_Sans_Thai'] text-lg">
 
     <!-- Header -->
     <header class="bg-blue-600 text-white py-4 shadow-lg">
         <h1 class="text-2xl font-bold text-center">ระบบสื่อสารด้วยเสียง</h1>
         <div class="flex justify-center items-center mt-2">
-            <div id="mix-result" class="bg-blue-700 p-2 rounded-lg mx-2">ยังไม่ได้เลือกคำ</div>
+            <div id="mix-result" class="bg-blue-700 text-white text-2xl font-bold p-4 rounded-lg mx-2 shadow-lg">
+                ยังไม่ได้เลือกคำ
+            </div>
             <div id="mix-controls" class="flex space-x-2"></div>
         </div>
     </header>
@@ -43,9 +30,15 @@
     <!-- Navigation -->
     <nav class="bg-white shadow-md py-4">
         <div class="flex justify-center space-x-4">
-            <button data-category="ทั่วไป" class="category-button px-4 py-2 rounded-lg bg-blue-100 text-blue-800 hover:bg-blue-200 transition-all">ทั่วไป</button>
-            <button data-category="ความต้องการ" class="category-button px-4 py-2 rounded-lg bg-green-100 text-green-800 hover:bg-green-200 transition-all">ความต้องการ</button>
-            <button data-category="คลัง" class="category-button px-4 py-2 rounded-lg bg-purple-100 text-purple-800 hover:bg-purple-200 transition-all">คลัง</button>
+            <button data-category="ทั่วไป" class="category-button px-4 py-2 rounded-lg bg-blue-100 text-blue-800 hover:bg-blue-200 transition-all">
+                ทั่วไป
+            </button>
+            <button data-category="ความต้องการ" class="category-button px-4 py-2 rounded-lg bg-green-100 text-green-800 hover:bg-green-200 transition-all">
+                ความต้องการ
+            </button>
+            <button data-category="คลัง" class="category-button px-4 py-2 rounded-lg bg-purple-100 text-purple-800 hover:bg-purple-200 transition-all">
+                คลัง
+            </button>
         </div>
     </nav>
 
@@ -69,19 +62,19 @@
 
     <!-- Floating Action Buttons -->
     <div class="fixed bottom-4 right-4 flex space-x-3">
-        <button id="btn-add" class="px-6 py-3 bg-green-500 text-white rounded-full shadow-lg hover:bg-green-600 transition-all">
+        <button id="btn-add" class="px-6 py-3 bg-green-500 text-white rounded-lg shadow-lg hover:bg-green-600 transition-all">
             ➕ เพิ่มคำ
         </button>
-        <button id="btn-mix" class="px-6 py-3 bg-purple-500 text-white rounded-full shadow-lg hover:bg-purple-600 transition-all">
+        <button id="btn-mix" class="px-6 py-3 bg-purple-500 text-white rounded-lg shadow-lg hover:bg-purple-600 transition-all">
             🔀 ผสมคำ
         </button>
-        <button id="btn-cancel-mix" class="px-6 py-3 bg-yellow-500 text-white rounded-full shadow-lg hover:bg-yellow-600 transition-all hidden">
+        <button id="btn-cancel-mix" class="px-6 py-3 bg-yellow-500 text-white rounded-lg shadow-lg hover:bg-yellow-600 transition-all hidden">
             ❌ ยกเลิกผสมคำ
         </button>
-        <button id="btn-delete" class="px-6 py-3 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-all">
+        <button id="btn-delete" class="px-6 py-3 bg-red-500 text-white rounded-lg shadow-lg hover:bg-red-600 transition-all">
             🗑️ ลบ
         </button>
-        <button id="btn-cancel-delete" class="px-6 py-3 bg-gray-500 text-white rounded-full shadow-lg hover:bg-gray-600 transition-all hidden">
+        <button id="btn-cancel-delete" class="px-6 py-3 bg-gray-500 text-white rounded-lg shadow-lg hover:bg-gray-600 transition-all hidden">
             ❌ ยกเลิกลบคำ
         </button>
     </div>
