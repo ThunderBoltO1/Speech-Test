@@ -156,14 +156,13 @@ function renderButtons(words = []) {
 }
 
 // UI Functions
+// Update setCategory to not clear selectedWords when switching categories
 function setCategory(category) {
     currentCategory = category;
-    // เคลียร์คำที่เลือกเมื่อเปลี่ยนหมวดหมู่
-    selectedWords = [];
-    updateSelectionUI();
     loadCategoryData();
 }
 
+// Modify toggleWordSelection to ensure words from different categories can be selected
 function toggleWordSelection(word) {
     if (!isSelectMode) return;
     
@@ -177,13 +176,12 @@ function toggleWordSelection(word) {
     updateSelectionUI();
     updateMixResult();
     
-    // อัปเดตเฉพาะสถานะการเลือกบนปุ่ม
+    // Update selection indicators across all categories
     document.querySelectorAll('.word-button').forEach(button => {
-        if (button.getAttribute('data-word') === word) {
-            const indicator = button.querySelector('.selection-indicator');
-            if (indicator) {
-                indicator.textContent = selectedWords.includes(word) ? '✔️' : '';
-            }
+        const buttonWord = button.getAttribute('data-word');
+        const indicator = button.querySelector('.selection-indicator');
+        if (indicator) {
+            indicator.textContent = selectedWords.includes(buttonWord) ? '✔️' : '';
         }
     });
 }
@@ -294,6 +292,7 @@ function toggleMixingMode() {
     loadCategoryData(); 
 }
 
+// Modify updateMixingUI to allow category buttons to remain enabled in mixing mode
 function updateMixingUI() {
     const mixButton = document.getElementById('btn-mix');
     const deleteButton = document.getElementById('btn-delete');
@@ -316,15 +315,10 @@ function updateMixingUI() {
         deleteButton.classList.add('bg-red-500');
     }
 
-    // ปิดการใช้งานปุ่มหมวดหมู่เมื่ออยู่ในโหมดผสมคำ
+    // Keep category buttons enabled in mixing mode
     document.querySelectorAll('.category-button').forEach(button => {
-        button.disabled = isSelectMode;
-        // เพิ่มการเปลี่ยนแปลงสีหรือความโปร่งใสเมื่อปุ่มถูกปิดการใช้งาน
-        if (isSelectMode) {
-            button.classList.add('opacity-50');
-        } else {
-            button.classList.remove('opacity-50');
-        }
+        button.disabled = false;
+        button.classList.remove('opacity-50');
     });
 }
 
