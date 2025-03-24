@@ -230,42 +230,32 @@ function updateMixResult(text = '') {
     }
 }
 
+// Speech Functions
 function speakText(text) {
-    const url = `https://texttospeech.googleapis.com/v1/text:synthesize?key=AIzaSyC5n7h-wuxvKdvP4gXBiSStuU8bFSm4k2U`;
-    const body = JSON.stringify({
-        input: { text },
-        voice: { languageCode: 'th-TH', name: 'th-TH-Standard-A' },  // Standard voice
-        audioConfig: { audioEncoding: 'MP3', speakingRate: 0.6, pitch: 0.4 }  // Slow rate and lower pitch
-    });
+    if (typeof responsiveVoice !== 'undefined') {
+        responsiveVoice.speak(text, "Thai Male", {
+            rate: 0.7, // Slow down the speech rate
+            pitch: 0.8, // Slightly lower pitch for a more mature tone
+            onstart: () => {
+                console.log('เริ่มพูด:', text);
+                highlightSpeakingButton(text);
+            },
+            onend: () => {
+                console.log('พูดเสร็จสิ้น:', text);
+                removeSpeakingHighlight();
+            },
+            onerror: (error) => {
+                console.error('เกิดข้อผิดพลาดในการพูด:', error);
+                showError('ไม่สามารถพูดข้อความได้');
+            }
+        });
 
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body
-    })
-    .then(response => response.json())
-    .then(data => {
-        const audioContent = data.audioContent;
-        const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
-        audio.play();
-
-        console.log('เริ่มพูด:', text);
-        highlightSpeakingButton(text);
-
-        audio.onended = () => {
-            console.log('พูดเสร็จสิ้น:', text);
-            removeSpeakingHighlight();
-        };
-    })
-    .catch(error => {
-        console.error('เกิดข้อผิดพลาดในการพูด:', error);
+        // แสดงข้อความที่พูดบน mix-result
+        updateMixResult(text);
+    } else {
+        console.error('ResponsiveVoice.js ไม่พร้อมใช้งาน');
         showError('ไม่สามารถพูดข้อความได้');
-    });
-
-    // แสดงข้อความที่พูดบน mix-result
-    updateMixResult(text);
+    }
 }
 
 function highlightSpeakingButton(text) {
