@@ -140,7 +140,7 @@ function renderButtons(words = []) {
     if (elements.buttonContainer) {
         // สร้าง HTML สำหรับปุ่มคำศัพท์
         elements.buttonContainer.innerHTML = words.map(word => `
-            <button class="word-button flex-1 text-left bg-blue-500 text-white text-xl px-4 py-2 rounded-full m-2 hover:bg-blue-600 transition-all"
+            <button class="word-button flex-1 text-left bg-blue-500 text-white text-xl px-4 py-2 rounded-lx m-2 hover:bg-blue-600 transition-all"
                     data-word="${word}">
                 ${word}
                 ${isSelectMode ? `<span class="selection-indicator ml-2 text-green-500">${selectedWords.includes(word) ? '✔️' : ''}</span>` : ''}
@@ -233,7 +233,7 @@ function updateMixResult(text = '') {
 // Speech Functions
 function speakText(text) {
     if (typeof responsiveVoice !== 'undefined') {
-        responsiveVoice.speak(text, "Thai Female", {
+        responsiveVoice.speak(text, "Thai Male", {
             onstart: () => {
                 console.log('เริ่มพูด:', text);
                 highlightSpeakingButton(text);
@@ -401,7 +401,7 @@ function showToast(message) {
 
 // Initialize
 if (typeof responsiveVoice !== 'undefined') {
-    responsiveVoice.setDefaultVoice("Thai Female");
+    responsiveVoice.setDefaultVoice("Thai Male");
 }
 
 // Add New Word
