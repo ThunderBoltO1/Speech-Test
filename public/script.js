@@ -315,24 +315,20 @@ function cancelMixingMode() {
 // Modify updateMixingUI to handle the cancel mix button
 function updateMixingUI() {
     const mixButton = document.getElementById('btn-mix');
-    const deleteButton = document.getElementById('btn-delete');
+    
 
     if (isSelectMode) {
         mixButton.textContent = 'พูดคำผสม';
         mixButton.classList.remove('bg-purple-500');
         mixButton.classList.add('bg-green-500');
 
-        deleteButton.textContent = 'ลบคำที่เลือก';
-        deleteButton.classList.remove('bg-red-500');
-        deleteButton.classList.add('bg-yellow-500');
+    
     } else {
         mixButton.textContent = 'ผสมคำ';
         mixButton.classList.remove('bg-green-500');
         mixButton.classList.add('bg-purple-500');
 
-        deleteButton.textContent = 'ลบ';
-        deleteButton.classList.remove('bg-yellow-500');
-        deleteButton.classList.add('bg-red-500');
+        
     }
 
     document.querySelectorAll('.category-button').forEach(button => {
@@ -485,15 +481,38 @@ async function deleteSelectedWord() {
 
 async function deleteWordFromSheet(word, category) {
     const sheetName = CATEGORY_SHEETS[category];
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}:batchUpdate`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}:batchUpdate`;
 
+    // Fetch the row index of the word to delete
+    const getUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=ROWS`;
+    const getResponse = await fetch(getUrl, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
+        }
+    });
+
+    if (!getResponse.ok) {
+        throw new Error(`ไม่สามารถดึงข้อมูลได้: ${getResponse.statusText}`);
+    }
+
+    const data = await getResponse.json();
+    const rowIndex = data.values.findIndex(row => row.includes(word));
+
+    if (rowIndex === -1) {
+        throw new Error(`ไม่พบคำที่ต้องการลบ: ${word}`);
+    }
+
+    // Prepare the batchUpdate request to delete the row
     const requestBody = {
         requests: [
             {
-                findReplace: {
-                    find: word,
-                    replacement: '',
-                    matchEntireCell: true
+                deleteDimension: {
+                    range: {
+                        sheetId: await getSheetId(sheetName),
+                        dimension: "ROWS",
+                        startIndex: rowIndex,
+                        endIndex: rowIndex + 1
+                    }
                 }
             }
         ]
@@ -516,4 +535,26 @@ async function deleteWordFromSheet(word, category) {
         }
         throw new Error(`ไม่สามารถลบข้อมูลได้: ${response.statusText}`);
     }
+}
+
+async function getSheetId(sheetName) {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}`;
+    const response = await fetch(url, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error(`ไม่สามารถดึงข้อมูล Sheet ID ได้: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const sheet = data.sheets.find(sheet => sheet.properties.title === sheetName);
+
+    if (!sheet) {
+        throw new Error(`ไม่พบ Sheet: ${sheetName}`);
+    }
+
+    return sheet.properties.sheetId;
 }
