@@ -30,12 +30,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.category-button').forEach(button => {
         button.addEventListener('click', () => setCategory(button.dataset.category));
     });
-    
+
     document.getElementById('btn-add').addEventListener('click', openModal);
     document.getElementById('btn-mix').addEventListener('click', toggleMixingMode);
     document.getElementById('btn-delete').addEventListener('click', deleteSelectedWord);
-    document.getElementById('btn-cancel-mix').addEventListener('click', cancelMixingMode);
-    
+
+    const cancelMixButton = document.getElementById('btn-cancel-mix');
+    if (cancelMixButton) {
+        cancelMixButton.addEventListener('click', cancelMixingMode);
+    }
+
+    const cancelDeleteButton = document.getElementById('btn-cancel-delete');
+    if (cancelDeleteButton) {
+        cancelDeleteButton.addEventListener('click', cancelDeleteMode);
+    }
+
     handleAuthResponse();
 });
 
