@@ -234,6 +234,8 @@ function updateMixResult(text = '') {
 function speakText(text) {
     if (typeof responsiveVoice !== 'undefined') {
         responsiveVoice.speak(text, "Thai Male", {
+            rate: 0.7, // Slow down the speech rate
+            pitch: 0.8, // Slightly lower pitch for a more mature tone
             onstart: () => {
                 console.log('เริ่มพูด:', text);
                 highlightSpeakingButton(text);
