@@ -199,12 +199,6 @@ function updateSelectionUI() {
     }
 }
 
-// เพิ่มฟังก์ชันใหม่สำหรับลบคำจาก selected words
-function removeSelectedWord(word) {
-    const index = selectedWords.indexOf(word);
-    if (index > -1) {
-        selectedWords.splice(index, 1);
-    }
     
     updateSelectionUI();
     updateMixResult();
@@ -218,7 +212,6 @@ function removeSelectedWord(word) {
             }
         }
     });
-}
 
 function updateMixResult(text = '') {
     if (elements.mixResult) {
@@ -341,17 +334,11 @@ function updateMixingUI() {
         mixButton.classList.remove('bg-purple-500');
         mixButton.classList.add('bg-green-500');
 
-        deleteButton.textContent = 'ลบคำที่เลือก';
-        deleteButton.classList.remove('bg-red-500');
-        deleteButton.classList.add('bg-yellow-500');
     } else {
         mixButton.textContent = 'ผสมคำ';
         mixButton.classList.remove('bg-green-500');
         mixButton.classList.add('bg-purple-500');
 
-        deleteButton.textContent = 'ลบ';
-        deleteButton.classList.remove('bg-yellow-500');
-        deleteButton.classList.add('bg-red-500');
     }
 
     // ปิดการใช้งานปุ่มหมวดหมู่เมื่ออยู่ในโหมดผสมคำ
@@ -449,94 +436,6 @@ async function addWordToSheet(word, category) {
         throw new Error(`ไม่สามารถบันทึกข้อมูลได้: ${response.statusText}`);
     }
 }
-
-// แก้ไขฟังก์ชัน deleteSelectedWords ให้ทำงานได้ไม่ว่าจะอยู่ในโหมดใด
-function deleteSelectedWords() {
-    if (isSelectMode) {
-        // ในโหมดผสมคำ: ลบคำที่เลือกไว้
-        if (selectedWords.length === 0) {
-            showError('ไม่มีคำที่เลือกไว้');
-            return;
-        }
-
-        if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบคำที่เลือกทั้งหมดออกจากรายการเลือก?`)) {
-            return;
-        }
-
-        // ลบคำที่เลือกออกจากรายการ
-        selectedWords = [];
-
-        // อัปเดต UI
-        updateSelectionUI();
-        updateMixResult();
-        
-        // อัปเดตเครื่องหมายการเลือกบนปุ่มคำศัพท์
-        document.querySelectorAll('.selection-indicator').forEach(indicator => {
-            indicator.textContent = '';
-        });
-        
-        showToast('ลบคำที่เลือกออกจากรายการเรียบร้อยแล้ว');
-    } else {
-        // ในโหมดปกติ: ลบคำศัพท์ออกจากหมวดหมู่
-        deleteWordFromCategory();
-    }
-}
-
-// ฟังก์ชันใหม่สำหรับลบคำศัพท์ออกจากหมวดหมู่
-async function deleteWordFromCategory() {
-    // เปิดหน้าต่างให้เลือกคำที่ต้องการลบ
-    const wordToDelete = prompt('กรุณาระบุคำที่ต้องการลบออกจากหมวดหมู่:');
-    
-    if (!wordToDelete || wordToDelete.trim() === '') {
-        return;
-    }
-    
-    // ตรวจสอบว่าคำนี้มีอยู่ในหมวดหมู่หรือไม่
-    const words = Array.from(document.querySelectorAll('.word-button'))
-                      .map(button => button.getAttribute('data-word'));
-    
-    if (!words.includes(wordToDelete)) {
-        showError('ไม่พบคำนี้ในหมวดหมู่ปัจจุบัน');
-        return;
-    }
-    
-    // ถามยืนยันก่อนลบ
-    if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบคำ "${wordToDelete}" ออกจากหมวดหมู่ "${currentCategory}"?`)) {
-        return;
-    }
-    
-    try {
-        await deleteWordFromSheet(wordToDelete, currentCategory);
-        showToast('ลบคำศัพท์ออกจากหมวดหมู่เรียบร้อยแล้ว');
-        loadCategoryData(); // โหลดข้อมูลใหม่
-    } catch (error) {
-        console.error('Error deleting word:', error);
-        showError('เกิดข้อผิดพลาดในการลบคำศัพท์: ' + error.message);
-    }
-}
-
-// ฟังก์ชันสำหรับลบคำออกจาก Sheet
-async function deleteWordFromSheet(word, category) {
-    const sheetName = CATEGORY_SHEETS[category];
-    
-    // 1. ดึงข้อมูลทั้งหมดจาก sheet
-    const getUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?majorDimension=COLUMNS`;
-    
-    const getResponse = await fetch(getUrl, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-    });
-    
-    if (!getResponse.ok) {
-        throw new Error(`ไม่สามารถดึงข้อมูลได้: ${getResponse.statusText}`);
-    }
-    
-    const data = await getResponse.json();
-    if (!data.values || !data.values[0]) {
-        throw new Error('ไม่มีข้อมูลใน Sheet');
-    }
-    
-    // 2. กรองคำที่ต้องการลบออก
-    const updatedWords = data.values[0].filter(w => w !== word);
     
     // 3. อัปเดต sheet ด้วยข้อมูลใหม่
     const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A1:A${updatedWords.length}?valueInputOption=USER_ENTERED`;
@@ -571,4 +470,3 @@ async function deleteWordFromSheet(word, category) {
             console.warn('ไม่สามารถเคลียร์ข้อมูลเก่าได้', clearResponse.statusText);
         }
     }
-}
