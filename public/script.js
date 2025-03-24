@@ -4,9 +4,9 @@ const REDIRECT_URI = 'https://speech-test-nine.vercel.app';
 const SPREADSHEET_ID = '1XuZ7o1fcZ6Y01buC6J9Aep_tU7H9XFLt8ZUVPPrp340';
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const CATEGORY_SHEETS = {
-    'ทั่วไป': 'Sheet1',
-    'ความต้องการ': 'Sheet2',
-    'คลัง': 'Sheet3'
+    'ทั่วไป': 'common',
+    'ความต้องการ': 'demand',
+    'คลัง': 'storage',
 };
 
 // State
@@ -118,16 +118,12 @@ async function loadCategoryData() {
         }
         
         const data = await response.json();
-        if (!data.values) {
-            throw new Error('ไม่มีข้อมูลใน Google Sheets');
-        }
-        
-        // กรองคำว่างออกก่อนแสดงผล
-        const filteredWords = data.values[0].filter(word => word && word.trim() !== '');
+        const filteredWords = data.values ? data.values[0].filter(word => word && word.trim() !== '') : [];
         renderButtons(filteredWords);
     } catch (error) {
         console.error('Error loading category data:', error);
         showError('ไม่สามารถโหลดข้อมูลได้: ' + error.message);
+        renderButtons([]); // Render an empty state if the sheet is empty or an error occurs
     }
 }
 
@@ -135,7 +131,7 @@ function renderButtons(words = []) {
     if (elements.buttonContainer) {
         // สร้าง HTML สำหรับปุ่มคำศัพท์
         elements.buttonContainer.innerHTML = words.map(word => `
-            <button class="word-button flex-1 text-left bg-blue-500 text-white px-4 py-2 rounded-full m-2 hover:bg-blue-600 transition-all"
+            <button class="word-button flex-1 text-left bg-green-500 text-white text-xl px-4 py-2 rounded-full m-2 hover:bg-green-600 transition-all"
                     data-word="${word}">
                 ${word}
                 ${isSelectMode ? `<span class="selection-indicator ml-2">${selectedWords.includes(word) ? '✔️' : ''}</span>` : ''}
@@ -190,7 +186,7 @@ function toggleWordSelection(word) {
 function updateSelectionUI() {
     if (elements.selectedWordsContainer) {
         elements.selectedWordsContainer.innerHTML = selectedWords.map(word => `
-            <span class="selected-word bg-blue-500 text-white px-4 py-2 rounded-full inline-flex items-center m-1">
+            <span class="selected-word bg-green-500 text-white text-xl px-4 py-2 rounded-full inline-flex items-center m-1">
                 ${word}
                 <button class="ml-2 hover:text-gray-200" onclick="removeSelectedWord('${word}')">&times;</button>
             </span>
@@ -427,14 +423,18 @@ function toggleDeleteMode() {
 
     // Update the delete button text and style
     const deleteButton = document.getElementById('btn-delete');
+    const cancelDeleteButton = document.getElementById('btn-cancel-delete');
+
     if (isSelectMode) {
         deleteButton.textContent = 'ยืนยันลบ';
         deleteButton.classList.remove('bg-red-500');
         deleteButton.classList.add('bg-yellow-500');
+        cancelDeleteButton.classList.remove('hidden'); // Show cancel delete button
     } else {
         deleteButton.textContent = 'ลบ';
         deleteButton.classList.remove('bg-yellow-500');
         deleteButton.classList.add('bg-red-500');
+        cancelDeleteButton.classList.add('hidden'); // Hide cancel delete button
         selectedWords = []; // Clear selected words when exiting delete mode
         updateSelectionUI();
         updateMixResult();
@@ -443,6 +443,16 @@ function toggleDeleteMode() {
     // Reload category data to show or hide selection indicators
     loadCategoryData();
 }
+
+// Add a function to handle canceling delete mode
+function cancelDeleteMode() {
+    if (isSelectMode) {
+        toggleDeleteMode(); // Exit delete mode
+    }
+}
+
+// Add event listener for the cancel delete button
+document.getElementById('btn-cancel-delete').addEventListener('click', cancelDeleteMode);
 
 async function deleteSelectedWord() {
     if (!isSelectMode) {
