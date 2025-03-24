@@ -34,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-add').addEventListener('click', openModal);
     document.getElementById('btn-mix').addEventListener('click', toggleMixingMode);
     document.getElementById('btn-delete').addEventListener('click', deleteSelectedWords);
-    document.getElementById('btn-cancel-mix').addEventListener('click', cancelMixingMode); // เพิ่ม Event Listener สำหรับปุ่มยกเลิกผสมคำ
     
     handleAuthResponse();
 });
@@ -299,16 +298,6 @@ function toggleMixingMode() {
     loadCategoryData(); 
 }
 
-// ฟังก์ชันใหม่สำหรับยกเลิกโหมดผสมคำ
-function cancelMixingMode() {
-    isSelectMode = false;
-    selectedWords = [];
-    updateMixingUI();
-    updateSelectionUI();
-    updateMixResult();
-    loadCategoryData();
-}
-
 // ฟังก์ชันใหม่สำหรับบันทึกคำผสมลงใน "คลัง" (Sheet3)
 async function saveToStorage(mixedText) {
     try {
@@ -346,7 +335,6 @@ async function saveToStorage(mixedText) {
 function updateMixingUI() {
     const mixButton = document.getElementById('btn-mix');
     const deleteButton = document.getElementById('btn-delete');
-    const cancelMixButton = document.getElementById('btn-cancel-mix');
 
     if (isSelectMode) {
         mixButton.textContent = 'พูดคำผสม';
@@ -356,8 +344,6 @@ function updateMixingUI() {
         deleteButton.textContent = 'ลบคำที่เลือก';
         deleteButton.classList.remove('bg-red-500');
         deleteButton.classList.add('bg-yellow-500');
-
-        cancelMixButton.classList.remove('hidden');
     } else {
         mixButton.textContent = 'ผสมคำ';
         mixButton.classList.remove('bg-green-500');
@@ -366,8 +352,6 @@ function updateMixingUI() {
         deleteButton.textContent = 'ลบ';
         deleteButton.classList.remove('bg-yellow-500');
         deleteButton.classList.add('bg-red-500');
-
-        cancelMixButton.classList.add('hidden');
     }
 
     // ปิดการใช้งานปุ่มหมวดหมู่เมื่ออยู่ในโหมดผสมคำ
