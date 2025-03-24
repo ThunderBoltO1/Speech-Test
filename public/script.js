@@ -426,7 +426,7 @@ async function addWordToSheet(word, category) {
 }
 
 // Delete Selected Words
-function deleteSelectedWord() {
+async function deleteSelectedWord() {
     // ตรวจสอบว่ามีคำที่เลือกหรือไม่
     if (selectedWords.length === 0) {
         showError('ไม่มีคำที่เลือกไว้');
@@ -438,18 +438,59 @@ function deleteSelectedWord() {
         return;
     }
 
-    // ลบคำที่เลือกทั้งหมด
-    selectedWords = [];
+    try {
+        // ลบคำที่เลือกจาก Google Sheets
+        for (const word of selectedWords) {
+            await deleteWordFromSheet(word, currentCategory);
+        }
 
-    // อัปเดต UI
-    updateSelectionUI(); // อัปเดตพื้นที่แสดงคำที่เลือก
-    updateMixResult(); // อัปเดตผลลัพธ์การผสมคำ
-    
-    // อัปเดตปุ่มคำศัพท์ (เคลียร์เครื่องหมายการเลือก)
-    document.querySelectorAll('.selection-indicator').forEach(indicator => {
-        indicator.textContent = '';
+        // ล้างคำที่เลือก
+        selectedWords = [];
+
+        // อัปเดต UI
+        updateSelectionUI(); // อัปเดตพื้นที่แสดงคำที่เลือก
+        updateMixResult(); // อัปเดตผลลัพธ์การผสมคำ
+        loadCategoryData(); // โหลดข้อมูลใหม่เพื่ออัปเดตปุ่มคำศัพท์
+
+        // แสดงข้อความแจ้งเตือน
+        showToast('ลบคำที่เลือกสำเร็จ!');
+    } catch (error) {
+        showError('เกิดข้อผิดพลาดในการลบคำ: ' + error.message);
+        console.error('Error deleting words:', error);
+    }
+}
+
+async function deleteWordFromSheet(word, category) {
+    const sheetName = CATEGORY_SHEETS[category];
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}:batchUpdate`;
+
+    const requestBody = {
+        requests: [
+            {
+                findReplace: {
+                    find: word,
+                    replacement: '',
+                    matchEntireCell: true
+                }
+            }
+        ]
+    };
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
     });
 
-    // แสดงข้อความแจ้งเตือน
-    showToast('ลบคำที่เลือกสำเร็จ!');
+    if (!response.ok) {
+        if (response.status === 401) {
+            showError('การยืนยันตัวตนล้มเหลว กรุณาล็อกอินใหม่');
+            authenticate();
+            return;
+        }
+        throw new Error(`ไม่สามารถลบข้อมูลได้: ${response.statusText}`);
+    }
 }
