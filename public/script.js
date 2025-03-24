@@ -280,9 +280,10 @@ function toggleMixingMode() {
         const mixedText = selectedWords.join(' ');
         if (mixedText.trim()) {
             speakText(mixedText); // พูดคำผสมเฉพาะเมื่อมีคำที่เลือก
+            selectedWords = []; // ล้างคำที่เลือกหลังจากพูด
+            updateSelectionUI(); // อัปเดต UI หลังจากล้างคำที่เลือก
+            updateMixResult(); // อัปเดตผลลัพธ์การผสมคำ
         }
-        // ไม่ต้องเคลียร์คำที่เลือกหลังจากพูด เพื่อให้ผู้ใช้สามารถพูดซ้ำได้
-        // selectedWords = []; 
     }
 
     // สลับโหมด
