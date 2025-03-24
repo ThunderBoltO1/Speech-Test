@@ -140,10 +140,10 @@ function renderButtons(words = []) {
     if (elements.buttonContainer) {
         // สร้าง HTML สำหรับปุ่มคำศัพท์
         elements.buttonContainer.innerHTML = words.map(word => `
-            <button class="word-button flex-1 text-left bg-green-500 text-white text-xl px-4 py-2 rounded-full m-2 hover:bg-green-600 transition-all"
+            <button class="word-button flex-1 text-left bg-blue-500 text-white text-xl px-4 py-2 rounded-full m-2 hover:bg-blue-600 transition-all"
                     data-word="${word}">
                 ${word}
-                ${isSelectMode ? `<span class="selection-indicator ml-2">${selectedWords.includes(word) ? '✔️' : ''}</span>` : ''}
+                ${isSelectMode ? `<span class="selection-indicator ml-2 text-green-500">${selectedWords.includes(word) ? '✔️' : ''}</span>` : ''}
             </button>
         `).join('');
         
@@ -280,13 +280,20 @@ function closeModal() {
     elements.newWordInput.value = '';
 }
 
-function toggleMixingMode() {
+async function toggleMixingMode() {
     const cancelMixButton = document.getElementById('btn-cancel-mix');
 
     if (isSelectMode) {
         const mixedText = selectedWords.join(' ');
         if (mixedText.trim()) {
             speakText(mixedText);
+            try {
+                await saveMixedTextToStorage(mixedText); // Save mixed text to the storage sheet
+                showToast('บันทึกคำผสมสำเร็จ!');
+            } catch (error) {
+                showError('เกิดข้อผิดพลาดในการบันทึกคำผสม: ' + error.message);
+                console.error('Error saving mixed text:', error);
+            }
             selectedWords = [];
             updateSelectionUI();
             updateMixResult();
@@ -304,6 +311,31 @@ function toggleMixingMode() {
     }
 
     loadCategoryData();
+}
+
+async function saveMixedTextToStorage(mixedText) {
+    const sheetName = CATEGORY_SHEETS['คลัง']; // Use the 'storage' sheet
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A:A:append?valueInputOption=USER_ENTERED`;
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            values: [[mixedText]]
+        })
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            showError('การยืนยันตัวตนล้มเหลว กรุณาล็อกอินใหม่');
+            authenticate();
+            return;
+        }
+        throw new Error(`ไม่สามารถบันทึกข้อมูลได้: ${response.statusText}`);
+    }
 }
 
 function cancelMixingMode() {
