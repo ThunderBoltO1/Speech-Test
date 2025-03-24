@@ -426,33 +426,56 @@ async function addWordToSheet(word, category) {
 }
 
 // Delete Selected Words
+function toggleDeleteMode() {
+    isSelectMode = !isSelectMode;
+
+    // Update the delete button text and style
+    const deleteButton = document.getElementById('btn-delete');
+    if (isSelectMode) {
+        deleteButton.textContent = 'ยืนยันลบ';
+        deleteButton.classList.remove('bg-red-500');
+        deleteButton.classList.add('bg-yellow-500');
+    } else {
+        deleteButton.textContent = 'ลบ';
+        deleteButton.classList.remove('bg-yellow-500');
+        deleteButton.classList.add('bg-red-500');
+        selectedWords = []; // Clear selected words when exiting delete mode
+        updateSelectionUI();
+        updateMixResult();
+    }
+
+    // Reload category data to show or hide selection indicators
+    loadCategoryData();
+}
+
 async function deleteSelectedWord() {
-    // ตรวจสอบว่ามีคำที่เลือกหรือไม่
+    if (!isSelectMode) {
+        toggleDeleteMode(); // Enter select mode if not already in it
+        return;
+    }
+
+    // Confirm deletion
     if (selectedWords.length === 0) {
         showError('ไม่มีคำที่เลือกไว้');
         return;
     }
 
-    // ยืนยันการลบ
     if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบคำที่เลือกทั้งหมด?`)) {
         return;
     }
 
     try {
-        // ลบคำที่เลือกจาก Google Sheets
+        // Delete selected words from Google Sheets
         for (const word of selectedWords) {
             await deleteWordFromSheet(word, currentCategory);
         }
 
-        // ล้างคำที่เลือก
+        // Clear selected words and exit delete mode
         selectedWords = [];
+        toggleDeleteMode();
 
-        // อัปเดต UI
-        updateSelectionUI(); // อัปเดตพื้นที่แสดงคำที่เลือก
-        updateMixResult(); // อัปเดตผลลัพธ์การผสมคำ
-        loadCategoryData(); // โหลดข้อมูลใหม่เพื่ออัปเดตปุ่มคำศัพท์
-
-        // แสดงข้อความแจ้งเตือน
+        // Reload data and update UI
+        loadCategoryData();
         showToast('ลบคำที่เลือกสำเร็จ!');
     } catch (error) {
         showError('เกิดข้อผิดพลาดในการลบคำ: ' + error.message);
