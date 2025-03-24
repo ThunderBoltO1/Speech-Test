@@ -466,8 +466,10 @@ async function deleteSelectedWord() {
             await deleteWordFromSheet(word, currentCategory);
         }
 
-        // Clear selected words and exit delete mode
+        // Clear selected words
         selectedWords = [];
+
+        // Exit delete mode
         toggleDeleteMode();
 
         // Reload data and update UI
