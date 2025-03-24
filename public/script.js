@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-add').addEventListener('click', openModal);
     document.getElementById('btn-mix').addEventListener('click', toggleMixingMode);
     document.getElementById('btn-delete').addEventListener('click', deleteSelectedWord);
+    document.getElementById('btn-cancel-mix').addEventListener('click', cancelMixingMode);
     
     handleAuthResponse();
 });
@@ -275,25 +276,43 @@ function closeModal() {
 }
 
 function toggleMixingMode() {
+    const cancelMixButton = document.getElementById('btn-cancel-mix');
+
     if (isSelectMode) {
-        // เมื่ออยู่ในโหมดผสมคำและกด "พูดคำผสม"
         const mixedText = selectedWords.join(' ');
         if (mixedText.trim()) {
-            speakText(mixedText); // พูดคำผสมเฉพาะเมื่อมีคำที่เลือก
-            selectedWords = []; // ล้างคำที่เลือกหลังจากพูด
-            updateSelectionUI(); // อัปเดต UI หลังจากล้างคำที่เลือก
-            updateMixResult(); // อัปเดตผลลัพธ์การผสมคำ
+            speakText(mixedText);
+            selectedWords = [];
+            updateSelectionUI();
+            updateMixResult();
         }
     }
 
-    // สลับโหมด
-    isSelectMode = !isSelectMode; 
+    isSelectMode = !isSelectMode;
     updateMixingUI();
-    // โหลดข้อมูลคำศัพท์ใหม่เพื่อแสดงหรือซ่อนเครื่องหมายการเลือก
-    loadCategoryData(); 
+
+    // Show or hide the cancel mix button
+    if (isSelectMode) {
+        cancelMixButton.classList.remove('hidden');
+    } else {
+        cancelMixButton.classList.add('hidden');
+    }
+
+    loadCategoryData();
 }
 
-// Modify updateMixingUI to allow category buttons to remain enabled in mixing mode
+function cancelMixingMode() {
+    isSelectMode = false;
+    selectedWords = [];
+    updateSelectionUI();
+    updateMixResult();
+    updateMixingUI();
+
+    // Hide the cancel mix button
+    document.getElementById('btn-cancel-mix').classList.add('hidden');
+}
+
+// Modify updateMixingUI to handle the cancel mix button
 function updateMixingUI() {
     const mixButton = document.getElementById('btn-mix');
     const deleteButton = document.getElementById('btn-delete');
@@ -316,7 +335,6 @@ function updateMixingUI() {
         deleteButton.classList.add('bg-red-500');
     }
 
-    // Keep category buttons enabled in mixing mode
     document.querySelectorAll('.category-button').forEach(button => {
         button.disabled = false;
         button.classList.remove('opacity-50');
