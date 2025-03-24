@@ -31,12 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', () => setCategory(button.dataset.category));
     });
     
-    
     document.getElementById('btn-add').addEventListener('click', openModal);
     document.getElementById('btn-mix').addEventListener('click', toggleMixingMode);
     document.getElementById('btn-delete').addEventListener('click', deleteSelectedWords);
-    document.getElementById('btn-cancel-mix').addEventListener('click', cancelMixing);
-    
     
     handleAuthResponse();
 });
@@ -367,16 +364,6 @@ function updateMixingUI() {
             button.classList.remove('opacity-50');
         }
     });
-}
-
-// Function to cancel mixing and reset selection
-function cancelMixing() {
-    if (isSelectMode) {
-        selectedWords = [];
-        updateSelectionUI();
-        updateMixResult();
-        showToast('ยกเลิกคำผสมเรียบร้อยแล้ว');
-    }
 }
 
 // Error Handling
