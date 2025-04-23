@@ -140,7 +140,7 @@ function renderButtons(words = []) {
     if (elements.buttonContainer) {
         // สร้าง HTML สำหรับปุ่มคำศัพท์
         elements.buttonContainer.innerHTML = words.map(word => `
-            <button class="word-button flex-1 text-left bg-blue-500 text-white text-xl px-4 py-5 rounded-lg m-2 hover:bg-blue-600 transition-all"
+            <button class="word-button flex-1 text-left bg-blue-500 text-white text-3xl px-6 py-10 rounded-lg m-2 hover:bg-blue-600 transition-all"
                     data-word="${word}">
                 ${word}
                 ${isSelectMode ? `<span class="selection-indicator ml-2 text-green-500">${selectedWords.includes(word) ? '✔️' : ''}</span>` : ''}
