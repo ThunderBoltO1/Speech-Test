@@ -242,33 +242,31 @@ function detectLanguage(text) {
 
 // Speech Functions
 function initializeVoice() {
-    if (typeof responsiveVoice === 'undefined') {
-        console.error('ResponsiveVoice failed to load');
-        return false;
-    }
-    
     try {
-        // Initialize default settings using speak parameters instead
-        const defaultParams = {
-            rate: 0.9,    // ความเร็วปานกลาง
-            pitch: 1.1,   // ระดับเสียงสูงขึ้นเล็กน้อย
-            volume: 1
-        };
-
-        // Test voice initialization with empty text
-        responsiveVoice.speak('', 'Thai Male', defaultParams);
-        responsiveVoice.cancel();
-
-        // Cache voices for later use
-        window._voiceSettings = {
-            defaultParams,
-            voices: {
-                thai: 'Thai Male',
-                english: 'US English Male'
-            }
-        };
-
-        return true;
+        if ('speechSynthesis' in window) {
+            window._voiceSettings = {
+                defaultParams: {
+                    rate: 0.9,
+                    pitch: 1.1,
+                    volume: 1
+                }
+            };
+            
+            // เตรียม voices
+            speechSynthesis.onvoiceschanged = () => {
+                const voices = speechSynthesis.getVoices();
+                window._voiceSettings.voices = {
+                    thai: voices.find(v => v.lang === 'th-TH') || voices[0],
+                    english: voices.find(v => v.lang === 'en-US') || voices[0]
+                };
+            };
+            
+            // เรียกครั้งแรกเผื่อ voices พร้อมแล้ว
+            speechSynthesis.getVoices();
+            
+            return true;
+        }
+        throw new Error('Browser does not support speech synthesis');
     } catch (error) {
         console.error('Voice initialization failed:', error);
         return false;
@@ -276,30 +274,40 @@ function initializeVoice() {
 }
 
 function speakText(text) {
-    if (!text || !window._voiceSettings) return;
+    if (!text) return;
 
     // ยกเลิกเสียงที่กำลังพูดอยู่
-    responsiveVoice.cancel();
+    window.speechSynthesis.cancel();
 
     const isThai = /[\u0E00-\u0E7F]/.test(text);
     updateMixResult(text);
-    
-    // ใช้การตั้งค่าจาก cache
-    const voice = isThai ? window._voiceSettings.voices.thai : window._voiceSettings.voices.english;
-    const speechOptions = {
-        ...window._voiceSettings.defaultParams,
-        onstart: () => {
-            highlightSpeakingButton(text);
-            window._lastSpokenText = text;
-        },
-        onend: () => {
-            removeSpeakingHighlight();
-            window._lastSpokenText = null;
-        }
-    };
 
     try {
-        responsiveVoice.speak(text, voice, speechOptions);
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        // ตั้งค่าพื้นฐาน
+        Object.assign(utterance, window._voiceSettings?.defaultParams || {});
+        
+        // เลือกเสียงตามภาษา
+        if (window._voiceSettings?.voices) {
+            utterance.voice = isThai ? 
+                window._voiceSettings.voices.thai : 
+                window._voiceSettings.voices.english;
+        }
+        
+        // ตั้งค่าภาษา
+        utterance.lang = isThai ? 'th-TH' : 'en-US';
+
+        // Events
+        utterance.onstart = () => highlightSpeakingButton(text);
+        utterance.onend = () => removeSpeakingHighlight();
+        utterance.onerror = (event) => {
+            console.error('Speech error:', event);
+            showError('ไม่สามารถอ่านข้อความได้');
+            removeSpeakingHighlight();
+        };
+
+        window.speechSynthesis.speak(utterance);
     } catch (error) {
         console.error('Speech error:', error);
         showError('ไม่สามารถอ่านข้อความได้');
@@ -449,33 +457,31 @@ function showToast(message) {
 
 // Initialize ResponsiveVoice with error handling
 function initializeVoice() {
-    if (typeof responsiveVoice === 'undefined') {
-        console.error('ResponsiveVoice failed to load');
-        return false;
-    }
-    
     try {
-        // Initialize default settings using speak parameters instead
-        const defaultParams = {
-            rate: 0.9,    // ความเร็วปานกลาง
-            pitch: 1.1,   // ระดับเสียงสูงขึ้นเล็กน้อย
-            volume: 1
-        };
-
-        // Test voice initialization with empty text
-        responsiveVoice.speak('', 'Thai Male', defaultParams);
-        responsiveVoice.cancel();
-
-        // Cache voices for later use
-        window._voiceSettings = {
-            defaultParams,
-            voices: {
-                thai: 'Thai Male',
-                english: 'US English Male'
-            }
-        };
-
-        return true;
+        if ('speechSynthesis' in window) {
+            window._voiceSettings = {
+                defaultParams: {
+                    rate: 0.9,
+                    pitch: 1.1,
+                    volume: 1
+                }
+            };
+            
+            // เตรียม voices
+            speechSynthesis.onvoiceschanged = () => {
+                const voices = speechSynthesis.getVoices();
+                window._voiceSettings.voices = {
+                    thai: voices.find(v => v.lang === 'th-TH') || voices[0],
+                    english: voices.find(v => v.lang === 'en-US') || voices[0]
+                };
+            };
+            
+            // เรียกครั้งแรกเผื่อ voices พร้อมแล้ว
+            speechSynthesis.getVoices();
+            
+            return true;
+        }
+        throw new Error('Browser does not support speech synthesis');
     } catch (error) {
         console.error('Voice initialization failed:', error);
         return false;
