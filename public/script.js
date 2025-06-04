@@ -252,49 +252,43 @@ function speakText(text) {
     const isThai = language === 'th';
     
     const speechOptions = {
-        rate: isThai ? 0.7 : 0.9, // Slightly faster for English
-        pitch: isThai ? 0.8 : 1.0, // Normal pitch for English
+        rate: isThai ? 1.0 : 1.2, // เพิ่มความเร็วในการอ่าน
+        pitch: 1.0, // ปรับระดับเสียงให้เป็นธรรมชาติ
         volume: 1,
         onstart: () => {
-            console.log('Starting speech:', text);
             highlightSpeakingButton(text);
+            if (window._lastSpeech) {
+                responsiveVoice.cancel(); // ยกเลิกเสียงที่กำลังพูดอยู่
+            }
+            window._lastSpeech = text;
         },
         onend: () => {
-            console.log('Finished speaking:', text);
             removeSpeakingHighlight();
+            window._lastSpeech = null;
         },
         onerror: (error) => {
             console.error('Speech error:', error);
-            showError(isThai ? 'เกิดข้อผิดพลาดในการอ่านข้อความ' : 'Error reading text');
+            showError('เกิดข้อผิดพลาดในการอ่านข้อความ');
             removeSpeakingHighlight();
+            window._lastSpeech = null;
         }
     };
 
-    // Try ResponsiveVoice first
-    if (typeof responsiveVoice !== 'undefined' && responsiveVoice.speak) {
+    // ใช้ ResponsiveVoice เท่านั้น ไม่ต้องใช้ Web Speech API
+    if (typeof responsiveVoice !== 'undefined') {
         try {
             const voice = isThai ? 'Thai Male' : 'US English Male';
+            // ยกเลิกเสียงที่กำลังพูดอยู่ก่อนพูดคำใหม่
+            responsiveVoice.cancel();
             responsiveVoice.speak(text, voice, speechOptions);
-            return;
         } catch (error) {
-            console.error('Error using ResponsiveVoice, falling back to Web Speech API:', error);
+            console.error('Error using ResponsiveVoice:', error);
+            showError('ไม่สามารถอ่านข้อความได้');
         }
+        return;
     }
-    
-    // Fallback to Web Speech API
-    if (window.voiceFallback && window.voiceFallback.speak) {
-        // Update language for Web Speech API
-        speechOptions.lang = isThai ? 'th-TH' : 'en-US';
-        if (!window.voiceFallback.speak(text, speechOptions)) {
-            showError(isThai ? 
-                'ไม่สามารถใช้งานระบบเสียงได้ กรุณาตรวจสอบการอนุญาตไมโครโฟนหรือลองใช้เบราว์เซอร์อื่น' :
-                'Cannot access speech system. Please check microphone permissions or try another browser.');
-        }
-    } else {
-        showError(isThai ? 
-            'ไม่สามารถโหลดระบบเสียงได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต' :
-            'Cannot load speech system. Please check your internet connection.');
-    }
+
+    showError('ไม่สามารถโหลดระบบเสียงได้ กรุณารีเฟรชหน้าเว็บ');
 }
 
 function highlightSpeakingButton(text) {
