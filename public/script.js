@@ -205,11 +205,12 @@ function updateSelectionUI() {
 
 // เพิ่มฟังก์ชันใหม่สำหรับลบคำจาก selected words
 function removeSelectedWord(word) {
-    const index = selectedWords.indexOf(word);
+    function speakText(text) {
+   const index = selectedWords.indexOf(word);
     if (index > -1) {
         selectedWords.splice(index, 1);
     }
-    
+}
     updateSelectionUI();
     updateMixResult();
     
@@ -231,44 +232,54 @@ function updateMixResult(text = '') {
 }
 
 // Speech Functions
-function speakText(text) {
-    if (typeof responsiveVoice !== 'undefined') {
-        responsiveVoice.speak(text, "Thai Male", {
-            rate: 0.7, // Slow down the speech rate
-            pitch: 0.8, // Slightly lower pitch for a more mature tone
-            onstart: () => {
-                console.log('เริ่มพูด:', text);
-                highlightSpeakingButton(text);
-            },
-            onend: () => {
-                console.log('พูดเสร็จสิ้น:', text);
-                removeSpeakingHighlight();
-            },
-            onerror: (error) => {
-                console.error('เกิดข้อผิดพลาดในการพูด:', error);
-                showError('ไม่สามารถพูดข้อความได้');
-            }
-        });
+// ========== ResponsiveVoice Functions ==========
 
-        // แสดงข้อความที่พูดบน mix-result
-        updateMixResult(text);
+// ตรวจจับภาษาไทย/อังกฤษ
+function detectLanguage(text) {
+    return /[\u0E00-\u0E7F]/.test(text) ? "Thai Female" : "UK English Male";
+}
+
+// พูดด้วยเสียงที่เหมาะสม
+function speakAuto(text) {
+    const voice = detectLanguage(text);
+    responsiveVoice.speak(text, voice, {
+        rate: 0.9,
+        pitch: 1,
+        onstart: () => {
+            console.log('เริ่มพูด:', text);
+            highlightSpeakingButton(text);
+        },
+        onend: () => {
+            console.log('พูดเสร็จสิ้น:', text);
+            removeSpeakingHighlight();
+        },
+        onerror: (error) => {
+            console.error('เกิดข้อผิดพลาดในการพูด:', error);
+            showError('ไม่สามารถพูดข้อความได้');
+        }
+    });
+
+    updateMixResult(text);
+}
+
+// รอให้ responsiveVoice โหลดก่อนพูด
+function waitForVoiceLoad(callback) {
+    if (responsiveVoice.voiceSupport()) {
+        callback();
     } else {
-        console.error('ResponsiveVoice.js ไม่พร้อมใช้งาน');
-        showError('ไม่สามารถพูดข้อความได้');
+        setTimeout(() => waitForVoiceLoad(callback), 100);
     }
 }
 
-function highlightSpeakingButton(text) {
-    document.querySelectorAll('.word-button').forEach(button => {
-        if (button.getAttribute('data-word') === text) {
-            button.classList.add('ring-4', 'ring-blue-300');
-        }
-    });
-}
+// ฟังก์ชันหลักที่ใช้ในปุ่ม
+function speakText(text) {
+    if (typeof responsiveVoice === 'undefined') {
+        showError('ไม่สามารถพูดข้อความได้ (ไม่มี ResponsiveVoice)');
+        return;
+    }
 
-function removeSpeakingHighlight() {
-    document.querySelectorAll('.word-button').forEach(button => {
-        button.classList.remove('ring-4', 'ring-blue-300');
+    waitForVoiceLoad(() => {
+        speakAuto(text);
     });
 }
 
