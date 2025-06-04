@@ -727,7 +727,7 @@ async function saveWordOrder() {
         .map(button => button.getAttribute('data-word'));
 
     const sheetName = CATEGORY_SHEETS[currentCategory];
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A:A`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A1:A${words.length}?valueInputOption=RAW`;
 
     try {
         const response = await fetch(url, {
@@ -737,18 +737,22 @@ async function saveWordOrder() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                values: words.map(word => [word]),
-                range: `${sheetName}!A:A`,
-                majorDimension: 'COLUMNS'
+                range: `${sheetName}!A1:A${words.length}`,
+                majorDimension: "ROWS",
+                values: words.map(word => [word])
             })
         });
 
         if (!response.ok) {
-            throw new Error(response.statusText);
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || response.statusText);
         }
+
+        // แสดง toast เมื่อบันทึกสำเร็จ
+        showToast('บันทึกลำดับคำสำเร็จ');
     } catch (error) {
         console.error('Error saving word order:', error);
-        showError('ไม่สามารถบันทึกลำดับคำได้');
+        showError('ไม่สามารถบันทึกลำดับคำได้: ' + error.message);
     }
 }
 
