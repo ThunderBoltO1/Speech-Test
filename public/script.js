@@ -248,20 +248,28 @@ function initializeVoice() {
     }
     
     try {
-        // ตั้งค่าเริ่มต้นสำหรับ ResponsiveVoice
+        // Set default voice and settings
         responsiveVoice.setDefaultVoice("Thai Male");
-        responsiveVoice.setDefaultRate(0.9);    // ลดความเร็วลง
-        responsiveVoice.setDefaultPitch(1.1);   // คงระดับเสียงเดิม
+        responsiveVoice.setDefaultRate(0.9);
+        responsiveVoice.setDefaultPitch(1.1);
         responsiveVoice.setDefaultVolume(1);    
 
-        // Preload เสียงภาษาไทย
-        responsiveVoice.speak("", "Thai Male", { volume: 0 });
-        
-        // Cache voices
-        window._voiceCache = {
-            thai: "Thai Male",
-            english: "US English Male"
-        };
+        // Initialize voice cache as a global variable
+        if (!window._voices) {
+            window._voices = {
+                thai: {
+                    name: "Thai Male",
+                    loaded: false
+                },
+                english: {
+                    name: "US English Male",
+                    loaded: false
+                }
+            };
+            
+            // Preload voices
+            preloadVoices();
+        }
 
         return true;
     } catch (error) {
@@ -270,18 +278,36 @@ function initializeVoice() {
     }
 }
 
+function preloadVoices() {
+    // Preload Thai voice
+    responsiveVoice.speak("", "Thai Male", { 
+        volume: 0,
+        onend: () => window._voices.thai.loaded = true 
+    });
+    
+    // Preload English voice
+    responsiveVoice.speak("", "US English Male", { 
+        volume: 0,
+        onend: () => window._voices.english.loaded = true 
+    });
+}
+
 function speakText(text) {
     if (!text) return;
 
-    // ยกเลิกเสียงที่กำลังพูดอยู่
+    // Cancel any ongoing speech
     responsiveVoice.cancel();
 
     const isThai = /[\u0E00-\u0E7F]/.test(text);
     updateMixResult(text);
     
+    // Get voice configuration
+    const voiceType = isThai ? 'thai' : 'english';
+    const voice = window._voices?.[voiceType]?.name || (isThai ? "Thai Male" : "US English Male");
+    
     const speechOptions = {
-        rate: isThai ? 0.9 : 1.1,      // ลดความเร็วลงทั้งไทยและอังกฤษ
-        pitch: isThai ? 1.1 : 1.0,     // คงระดับเสียงเดิม
+        rate: isThai ? 0.9 : 1.1,
+        pitch: isThai ? 1.1 : 1.0,
         volume: 1,
         onstart: () => {
             highlightSpeakingButton(text);
@@ -294,8 +320,6 @@ function speakText(text) {
     };
 
     try {
-        // ใช้ cached voice
-        const voice = window._voiceCache[isThai ? 'thai' : 'english'];
         responsiveVoice.speak(text, voice, speechOptions);
     } catch (error) {
         console.error('Speech error:', error);
@@ -466,26 +490,48 @@ function initializeVoice() {
     }
     
     try {
-        // ตั้งค่าเริ่มต้นสำหรับ ResponsiveVoice
+        // Set default voice and settings
         responsiveVoice.setDefaultVoice("Thai Male");
-        responsiveVoice.setDefaultRate(0.9);    // ลดความเร็วลง
-        responsiveVoice.setDefaultPitch(1.1);   // คงระดับเสียงเดิม
+        responsiveVoice.setDefaultRate(0.9);
+        responsiveVoice.setDefaultPitch(1.1);
         responsiveVoice.setDefaultVolume(1);    
 
-        // Preload เสียงภาษาไทย
-        responsiveVoice.speak("", "Thai Male", { volume: 0 });
-        
-        // Cache voices
-        window._voiceCache = {
-            thai: "Thai Male",
-            english: "US English Male"
-        };
+        // Initialize voice cache as a global variable
+        if (!window._voices) {
+            window._voices = {
+                thai: {
+                    name: "Thai Male",
+                    loaded: false
+                },
+                english: {
+                    name: "US English Male",
+                    loaded: false
+                }
+            };
+            
+            // Preload voices
+            preloadVoices();
+        }
 
         return true;
     } catch (error) {
         console.error('Voice initialization failed:', error);
         return false;
     }
+}
+
+function preloadVoices() {
+    // Preload Thai voice
+    responsiveVoice.speak("", "Thai Male", { 
+        volume: 0,
+        onend: () => window._voices.thai.loaded = true 
+    });
+    
+    // Preload English voice
+    responsiveVoice.speak("", "US English Male", { 
+        volume: 0,
+        onend: () => window._voices.english.loaded = true 
+    });
 }
 
 // Initialize voice on page load
