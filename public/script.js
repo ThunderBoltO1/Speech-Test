@@ -232,8 +232,20 @@ function updateMixResult(text = '') {
 
 // Speech Functions
 function speakText(text) {
-    if (typeof responsiveVoice !== 'undefined') {
-        responsiveVoice.speak(text, "Thai Male", {
+    if (!text) return;
+
+    // Update mix result display
+    updateMixResult(text);
+    
+    // Check if ResponsiveVoice is available
+    if (typeof responsiveVoice === 'undefined') {
+        showError('ไม่สามารถโหลดระบบเสียงได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+        console.error('ResponsiveVoice not available');
+        return;
+    }
+
+    try {
+        responsiveVoice.speak(text, 'Thai Male', {
             rate: 0.7, // Slow down the speech rate
             pitch: 0.8, // Slightly lower pitch for a more mature tone
             onstart: () => {
@@ -245,16 +257,14 @@ function speakText(text) {
                 removeSpeakingHighlight();
             },
             onerror: (error) => {
-                console.error('เกิดข้อผิดพลาดในการพูด:', error);
-                showError('ไม่สามารถพูดข้อความได้');
+                console.error('Speech error:', error);
+                showError('เกิดข้อผิดพลาดในการอ่านข้อความ');
+                removeSpeakingHighlight();
             }
         });
-
-        // แสดงข้อความที่พูดบน mix-result
-        updateMixResult(text);
-    } else {
-        console.error('ResponsiveVoice.js ไม่พร้อมใช้งาน');
-        showError('ไม่สามารถพูดข้อความได้');
+    } catch (error) {
+        console.error('Error using ResponsiveVoice:', error);
+        showError('เกิดข้อผิดพลาดในการอ่านข้อความ');
     }
 }
 
@@ -401,10 +411,29 @@ function showToast(message) {
     }, 3000);
 }
 
-// Initialize
-if (typeof responsiveVoice !== 'undefined') {
-    responsiveVoice.setDefaultVoice("Thai Male");
+// Initialize ResponsiveVoice with error handling
+function initializeVoice() {
+    if (typeof responsiveVoice === 'undefined') {
+        console.error('ResponsiveVoice failed to load. Please check your internet connection.');
+        return false;
+    }
+    
+    try {
+        responsiveVoice.setDefaultVoice("Thai Male");
+        return true;
+    } catch (error) {
+        console.error('Failed to initialize ResponsiveVoice:', error);
+        return false;
+    }
 }
+
+// Initialize voice on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const voiceInitialized = initializeVoice();
+    if (!voiceInitialized) {
+        console.warn('Voice functionality may be limited due to initialization issues');
+    }
+});
 
 // Add New Word
 async function addNewWord() {
