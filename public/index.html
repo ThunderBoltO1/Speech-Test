@@ -11,8 +11,31 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- ResponsiveVoice -->
-    <script src="https://code.responsivevoice.org/responsivevoice.js?key=YL7PkzaR"></script>
+    <!-- ResponsiveVoice with updated CDN and fallback -->
+    <script src="https://code.responsivevoice.org/responsivevoice.js?key=YL7PkzaR&v=2.0.1"></script>
+    <script>
+        // Fallback to Web Speech API if ResponsiveVoice fails to load
+        window.voiceFallback = {
+            speak: function(text, options) {
+                if ('speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'th-TH';
+                    utterance.rate = options.rate || 1;
+                    utterance.pitch = options.pitch || 1;
+                    utterance.volume = options.volume || 1;
+                    
+                    if (options.onstart) options.onstart();
+                    utterance.onend = function() {
+                        if (options.onend) options.onend();
+                    };
+                    
+                    speechSynthesis.speak(utterance);
+                    return true;
+                }
+                return false;
+            }
+        };
+    </script>
     
     <style>
         body {

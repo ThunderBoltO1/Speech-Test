@@ -237,34 +237,42 @@ function speakText(text) {
     // Update mix result display
     updateMixResult(text);
     
-    // Check if ResponsiveVoice is available
-    if (typeof responsiveVoice === 'undefined') {
-        showError('ไม่สามารถโหลดระบบเสียงได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
-        console.error('ResponsiveVoice not available');
-        return;
-    }
+    const speechOptions = {
+        rate: 0.7, // Slow down the speech rate
+        pitch: 0.8, // Slightly lower pitch for a more mature tone
+        volume: 1,
+        onstart: () => {
+            console.log('เริ่มพูด:', text);
+            highlightSpeakingButton(text);
+        },
+        onend: () => {
+            console.log('พูดเสร็จสิ้น:', text);
+            removeSpeakingHighlight();
+        },
+        onerror: (error) => {
+            console.error('Speech error:', error);
+            showError('เกิดข้อผิดพลาดในการอ่านข้อความ');
+            removeSpeakingHighlight();
+        }
+    };
 
-    try {
-        responsiveVoice.speak(text, 'Thai Male', {
-            rate: 0.7, // Slow down the speech rate
-            pitch: 0.8, // Slightly lower pitch for a more mature tone
-            onstart: () => {
-                console.log('เริ่มพูด:', text);
-                highlightSpeakingButton(text);
-            },
-            onend: () => {
-                console.log('พูดเสร็จสิ้น:', text);
-                removeSpeakingHighlight();
-            },
-            onerror: (error) => {
-                console.error('Speech error:', error);
-                showError('เกิดข้อผิดพลาดในการอ่านข้อความ');
-                removeSpeakingHighlight();
-            }
-        });
-    } catch (error) {
-        console.error('Error using ResponsiveVoice:', error);
-        showError('เกิดข้อผิดพลาดในการอ่านข้อความ');
+    // Try ResponsiveVoice first
+    if (typeof responsiveVoice !== 'undefined' && responsiveVoice.speak) {
+        try {
+            responsiveVoice.speak(text, 'Thai Male', speechOptions);
+            return;
+        } catch (error) {
+            console.error('Error using ResponsiveVoice, falling back to Web Speech API:', error);
+        }
+    }
+    
+    // Fallback to Web Speech API
+    if (window.voiceFallback && window.voiceFallback.speak) {
+        if (!window.voiceFallback.speak(text, speechOptions)) {
+            showError('ไม่สามารถใช้งานระบบเสียงได้ กรุณาตรวจสอบการอนุญาตไมโครโฟนหรือลองใช้เบราว์เซอร์อื่น');
+        }
+    } else {
+        showError('ไม่สามารถโหลดระบบเสียงได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
     }
 }
 
