@@ -232,7 +232,7 @@ function updateMixResult(text = '') {
 }
 
 // Speech Functions
-// ========== ResponsiveVoice Functions ==========
+// ========== ResponsiveVoice Functions ==========--
 
 // ตรวจจับภาษาไทย/อังกฤษ
 function detectLanguage(text) {
