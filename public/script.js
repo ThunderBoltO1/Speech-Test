@@ -1,7 +1,7 @@
 // Configuration
-const CLIENT_ID = '271962080875-khc6aslq3phrnm9cqgguk37j0funtr7f.apps.googleusercontent.com';
-const REDIRECT_URI = 'ram-speech.vercel.app';
-const SPREADSHEET_ID = '1YY1a1drCnfXrSNWrGBgrMaMlFQK5rzBOEoeMhW9MYm8';
+const CLIENT_ID = '271962080875-dr9uild15rad3n86816nmfq5ms7mj95o.apps.googleusercontent.com';
+const REDIRECT_URI = 'https://speech-test-nine.vercel.app';
+const SPREADSHEET_ID = '1XuZ7o1fcZ6Y01buC6J9Aep_tU7H9XFLt8ZUVPPrp340';
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const CATEGORY_SHEETS = {
     'ทั่วไป': 'common',
@@ -205,12 +205,11 @@ function updateSelectionUI() {
 
 // เพิ่มฟังก์ชันใหม่สำหรับลบคำจาก selected words
 function removeSelectedWord(word) {
-    function speakText(text) {
-   const index = selectedWords.indexOf(word);
+    const index = selectedWords.indexOf(word);
     if (index > -1) {
         selectedWords.splice(index, 1);
     }
-}
+    
     updateSelectionUI();
     updateMixResult();
     
@@ -232,54 +231,44 @@ function updateMixResult(text = '') {
 }
 
 // Speech Functions
-// ========== ResponsiveVoice Functions ==========--
+function speakText(text) {
+    if (typeof responsiveVoice !== 'undefined') {
+        responsiveVoice.speak(text, "Thai Male", {
+            rate: 0.7, // Slow down the speech rate
+            pitch: 0.8, // Slightly lower pitch for a more mature tone
+            onstart: () => {
+                console.log('เริ่มพูด:', text);
+                highlightSpeakingButton(text);
+            },
+            onend: () => {
+                console.log('พูดเสร็จสิ้น:', text);
+                removeSpeakingHighlight();
+            },
+            onerror: (error) => {
+                console.error('เกิดข้อผิดพลาดในการพูด:', error);
+                showError('ไม่สามารถพูดข้อความได้');
+            }
+        });
 
-// ตรวจจับภาษาไทย/อังกฤษ
-function detectLanguage(text) {
-    return /[\u0E00-\u0E7F]/.test(text) ? "Thai Female" : "UK English Male";
+        // แสดงข้อความที่พูดบน mix-result
+        updateMixResult(text);
+    } else {
+        console.error('ResponsiveVoice.js ไม่พร้อมใช้งาน');
+        showError('ไม่สามารถพูดข้อความได้');
+    }
 }
 
-// พูดด้วยเสียงที่เหมาะสม
-function speakAuto(text) {
-    const voice = detectLanguage(text);
-    responsiveVoice.speak(text, voice, {
-        rate: 0.9,
-        pitch: 1,
-        onstart: () => {
-            console.log('เริ่มพูด:', text);
-            highlightSpeakingButton(text);
-        },
-        onend: () => {
-            console.log('พูดเสร็จสิ้น:', text);
-            removeSpeakingHighlight();
-        },
-        onerror: (error) => {
-            console.error('เกิดข้อผิดพลาดในการพูด:', error);
-            showError('ไม่สามารถพูดข้อความได้');
+function highlightSpeakingButton(text) {
+    document.querySelectorAll('.word-button').forEach(button => {
+        if (button.getAttribute('data-word') === text) {
+            button.classList.add('ring-4', 'ring-blue-300');
         }
     });
-
-    updateMixResult(text);
 }
 
-// รอให้ responsiveVoice โหลดก่อนพูด
-function waitForVoiceLoad(callback) {
-    if (responsiveVoice.voiceSupport()) {
-        callback();
-    } else {
-        setTimeout(() => waitForVoiceLoad(callback), 100);
-    }
-}
-
-// ฟังก์ชันหลักที่ใช้ในปุ่ม
-function speakText(text) {
-    if (typeof responsiveVoice === 'undefined') {
-        showError('ไม่สามารถพูดข้อความได้ (ไม่มี ResponsiveVoice)');
-        return;
-    }
-
-    waitForVoiceLoad(() => {
-        speakAuto(text);
+function removeSpeakingHighlight() {
+    document.querySelectorAll('.word-button').forEach(button => {
+        button.classList.remove('ring-4', 'ring-blue-300');
     });
 }
 
