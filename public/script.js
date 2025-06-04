@@ -1,6 +1,6 @@
 // Configuration
 const CLIENT_ID = '271962080875-dr9uild15rad3n86816nmfq5ms7mj95o.apps.googleusercontent.com';
-const REDIRECT_URI = 'https://speech-test-nine.vercel.app';
+const REDIRECT_URI = 'https://speech-test-git-test-preview-thunderbolto1s-projects.vercel.app';
 const SPREADSHEET_ID = '1XuZ7o1fcZ6Y01buC6J9Aep_tU7H9XFLt8ZUVPPrp340';
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const CATEGORY_SHEETS = {
