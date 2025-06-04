@@ -140,8 +140,9 @@ function renderButtons(words = []) {
     if (elements.buttonContainer) {
         // สร้าง HTML สำหรับปุ่มคำศัพท์
         elements.buttonContainer.innerHTML = words.map(word => `
-            <button class="word-button flex-1 text-center bg-blue-500 text-white text-4xl px-6 py-10 rounded-lg m-2 hover:bg-blue-600 transition-all"
-                    data-word="${word}" style="font-family: 'IBM Plex Sans Thai', sans-serif; font-size: 2.5rem; line-height: 1.5; word-wrap: break-word; white-space: normal;">
+            <button class="word-button flex-1 text-center bg-blue-500 text-white text-4xl px-6 py-10 rounded-lg m-2 hover:bg-blue-600 transition-all${isSelectMode ? ' cursor-pointer' : ''}"
+                    data-word="${word}" 
+                    draggable="true">
                 ${word}
                 ${isSelectMode ? `<span class="selection-indicator ml-2 text-green-500">${selectedWords.includes(word) ? '✔️' : ''}</span>` : ''}
             </button>
@@ -158,6 +159,8 @@ function renderButtons(words = []) {
                 }
             });
         });
+
+        initializeDragAndDrop();
     }
 }
 
@@ -270,7 +273,7 @@ function speakText(text) {
     // Try ResponsiveVoice first
     if (typeof responsiveVoice !== 'undefined' && responsiveVoice.speak) {
         try {
-            const voice = isThai ? 'Thai Male' : 'UK English Male';
+            const voice = isThai ? 'Thai Male' : 'US English Male';
             responsiveVoice.speak(text, voice, speechOptions);
             return;
         } catch (error) {
@@ -281,7 +284,7 @@ function speakText(text) {
     // Fallback to Web Speech API
     if (window.voiceFallback && window.voiceFallback.speak) {
         // Update language for Web Speech API
-        speechOptions.lang = isThai ? 'th-TH' : 'en-GB';
+        speechOptions.lang = isThai ? 'th-TH' : 'en-US';
         if (!window.voiceFallback.speak(text, speechOptions)) {
             showError(isThai ? 
                 'ไม่สามารถใช้งานระบบเสียงได้ กรุณาตรวจสอบการอนุญาตไมโครโฟนหรือลองใช้เบราว์เซอร์อื่น' :
@@ -320,22 +323,30 @@ function closeModal() {
 
 async function toggleMixingMode() {
     const cancelMixButton = document.getElementById('btn-cancel-mix');
+    let mixedText = '';
 
     if (isSelectMode) {
-        const mixedText = selectedWords.join(' ');
+        mixedText = selectedWords.join(' ');
         if (mixedText.trim()) {
-            speakText(mixedText);
             try {
-                await saveMixedTextToStorage(mixedText); // Save mixed text to the storage sheet
+                // Save mixed text to the storage sheet first
+                await saveMixedTextToStorage(mixedText);
                 showToast('บันทึกคำผสมสำเร็จ!');
+                
+                // Speak the mixed text after saving
+                speakText(mixedText);
+                
+                // Update the mix result display
+                updateMixResult(mixedText);
             } catch (error) {
-                showError('เกิดข้อผิดพลาดในการบันทึกคำผสม: ' + error.message);
                 console.error('Error saving mixed text:', error);
+                showError('เกิดข้อผิดพลาดในการบันทึกคำผสม: ' + error.message);
             }
-            selectedWords = [];
-            updateSelectionUI();
-            updateMixResult();
         }
+        
+        // Clear selection after speaking
+        selectedWords = [];
+        updateSelectionUI();
     }
 
     isSelectMode = !isSelectMode;
@@ -348,7 +359,10 @@ async function toggleMixingMode() {
         cancelMixButton.classList.add('hidden');
     }
 
-    loadCategoryData();
+    // Only reload category data if we're exiting mix mode
+    if (!isSelectMode) {
+        loadCategoryData();
+    }
 }
 
 async function saveMixedTextToStorage(mixedText) {
@@ -668,3 +682,103 @@ async function getSheetId(sheetName) {
 
     return sheet.properties.sheetId;
 }
+
+// Replace the old drag and drop implementation with this improved version
+function initializeDragAndDrop() {
+    const container = elements.buttonContainer;
+    let draggedElement = null;
+
+    container.addEventListener('dragstart', (e) => {
+        if (!e.target.classList.contains('word-button')) return;
+        draggedElement = e.target;
+        e.target.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', e.target.getAttribute('data-word'));
+    });
+
+    container.addEventListener('dragend', (e) => {
+        if (!e.target.classList.contains('word-button')) return;
+        e.target.classList.remove('dragging');
+        draggedElement = null;
+        saveWordOrder();
+    });
+
+    container.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (!draggedElement) return;
+
+        const targetButton = e.target.closest('.word-button');
+        if (!targetButton || targetButton === draggedElement) return;
+
+        const boundingRect = targetButton.getBoundingClientRect();
+        const isAfter = e.clientY > boundingRect.top + boundingRect.height / 2;
+
+        if (isAfter) {
+            targetButton.parentNode.insertBefore(draggedElement, targetButton.nextSibling);
+        } else {
+            targetButton.parentNode.insertBefore(draggedElement, targetButton);
+        }
+    });
+}
+
+// Add new function to save word order
+async function saveWordOrder() {
+    const words = Array.from(elements.buttonContainer.querySelectorAll('.word-button'))
+        .map(button => button.getAttribute('data-word'));
+
+    const sheetName = CATEGORY_SHEETS[currentCategory];
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A:A`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                values: words.map(word => [word]),
+                range: `${sheetName}!A:A`,
+                majorDimension: 'COLUMNS'
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(response.statusText);
+        }
+    } catch (error) {
+        console.error('Error saving word order:', error);
+        showError('ไม่สามารถบันทึกลำดับคำได้');
+    }
+}
+
+// Update the CSS for better drag and drop visual feedback
+const dragDropStyles = `
+    .word-button {
+        cursor: grab;
+        touch-action: none;
+        user-select: none;
+    }
+    .word-button:active {
+        cursor: grabbing;
+    }
+    .word-button.dragging {
+        opacity: 0.7;
+        cursor: grabbing;
+        background-color: #2563eb;
+        transform: scale(1.02);
+        z-index: 1000;
+    }
+`;
+
+// Remove existing style element if it exists
+const existingStyle = document.querySelector('style[data-dragdrop-styles]');
+if (existingStyle) {
+    existingStyle.remove();
+}
+
+// Add new style element
+const styleElement = document.createElement('style');
+styleElement.setAttribute('data-dragdrop-styles', '');
+styleElement.textContent = dragDropStyles;
+document.head.appendChild(styleElement);
