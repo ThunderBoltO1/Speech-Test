@@ -248,28 +248,25 @@ function initializeVoice() {
     }
     
     try {
-        // Set default voice and settings
-        responsiveVoice.setDefaultVoice("Thai Male");
-        responsiveVoice.setDefaultRate(0.9);
-        responsiveVoice.setDefaultPitch(1.1);
-        responsiveVoice.setDefaultVolume(1);    
+        // Initialize default settings using speak parameters instead
+        const defaultParams = {
+            rate: 0.9,    // ความเร็วปานกลาง
+            pitch: 1.1,   // ระดับเสียงสูงขึ้นเล็กน้อย
+            volume: 1
+        };
 
-        // Initialize voice cache as a global variable
-        if (!window._voices) {
-            window._voices = {
-                thai: {
-                    name: "Thai Male",
-                    loaded: false
-                },
-                english: {
-                    name: "US English Male",
-                    loaded: false
-                }
-            };
-            
-            // Preload voices
-            preloadVoices();
-        }
+        // Test voice initialization with empty text
+        responsiveVoice.speak('', 'Thai Male', defaultParams);
+        responsiveVoice.cancel();
+
+        // Cache voices for later use
+        window._voiceSettings = {
+            defaultParams,
+            voices: {
+                thai: 'Thai Male',
+                english: 'US English Male'
+            }
+        };
 
         return true;
     } catch (error) {
@@ -278,37 +275,19 @@ function initializeVoice() {
     }
 }
 
-function preloadVoices() {
-    // Preload Thai voice
-    responsiveVoice.speak("", "Thai Male", { 
-        volume: 0,
-        onend: () => window._voices.thai.loaded = true 
-    });
-    
-    // Preload English voice
-    responsiveVoice.speak("", "US English Male", { 
-        volume: 0,
-        onend: () => window._voices.english.loaded = true 
-    });
-}
-
 function speakText(text) {
-    if (!text) return;
+    if (!text || !window._voiceSettings) return;
 
-    // Cancel any ongoing speech
+    // ยกเลิกเสียงที่กำลังพูดอยู่
     responsiveVoice.cancel();
 
     const isThai = /[\u0E00-\u0E7F]/.test(text);
     updateMixResult(text);
     
-    // Get voice configuration
-    const voiceType = isThai ? 'thai' : 'english';
-    const voice = window._voices?.[voiceType]?.name || (isThai ? "Thai Male" : "US English Male");
-    
+    // ใช้การตั้งค่าจาก cache
+    const voice = isThai ? window._voiceSettings.voices.thai : window._voiceSettings.voices.english;
     const speechOptions = {
-        rate: isThai ? 0.9 : 1.1,
-        pitch: isThai ? 1.1 : 1.0,
-        volume: 1,
+        ...window._voiceSettings.defaultParams,
         onstart: () => {
             highlightSpeakingButton(text);
             window._lastSpokenText = text;
@@ -326,20 +305,6 @@ function speakText(text) {
         showError('ไม่สามารถอ่านข้อความได้');
         removeSpeakingHighlight();
     }
-}
-
-function highlightSpeakingButton(text) {
-    document.querySelectorAll('.word-button').forEach(button => {
-        if (button.getAttribute('data-word') === text) {
-            button.classList.add('ring-4', 'ring-blue-300');
-        }
-    });
-}
-
-function removeSpeakingHighlight() {
-    document.querySelectorAll('.word-button').forEach(button => {
-        button.classList.remove('ring-4', 'ring-blue-300');
-    });
 }
 
 // Modal Functions
@@ -476,7 +441,7 @@ function showToast(message) {
     toast.textContent = message;
     
     document.body.appendChild(toast);
-    
+
     setTimeout(() => {
         toast.remove();
     }, 3000);
@@ -490,48 +455,31 @@ function initializeVoice() {
     }
     
     try {
-        // Set default voice and settings
-        responsiveVoice.setDefaultVoice("Thai Male");
-        responsiveVoice.setDefaultRate(0.9);
-        responsiveVoice.setDefaultPitch(1.1);
-        responsiveVoice.setDefaultVolume(1);    
+        // Initialize default settings using speak parameters instead
+        const defaultParams = {
+            rate: 0.9,    // ความเร็วปานกลาง
+            pitch: 1.1,   // ระดับเสียงสูงขึ้นเล็กน้อย
+            volume: 1
+        };
 
-        // Initialize voice cache as a global variable
-        if (!window._voices) {
-            window._voices = {
-                thai: {
-                    name: "Thai Male",
-                    loaded: false
-                },
-                english: {
-                    name: "US English Male",
-                    loaded: false
-                }
-            };
-            
-            // Preload voices
-            preloadVoices();
-        }
+        // Test voice initialization with empty text
+        responsiveVoice.speak('', 'Thai Male', defaultParams);
+        responsiveVoice.cancel();
+
+        // Cache voices for later use
+        window._voiceSettings = {
+            defaultParams,
+            voices: {
+                thai: 'Thai Male',
+                english: 'US English Male'
+            }
+        };
 
         return true;
     } catch (error) {
         console.error('Voice initialization failed:', error);
         return false;
     }
-}
-
-function preloadVoices() {
-    // Preload Thai voice
-    responsiveVoice.speak("", "Thai Male", { 
-        volume: 0,
-        onend: () => window._voices.thai.loaded = true 
-    });
-    
-    // Preload English voice
-    responsiveVoice.speak("", "US English Male", { 
-        volume: 0,
-        onend: () => window._voices.english.loaded = true 
-    });
 }
 
 // Initialize voice on page load
