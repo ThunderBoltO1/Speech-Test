@@ -19,22 +19,64 @@
             speak: function(text, options) {
                 if ('speechSynthesis' in window) {
                     const utterance = new SpeechSynthesisUtterance(text);
-                    utterance.lang = 'th-TH';
+                    
+                    // Set language based on options or default to English
+                    utterance.lang = options.lang || 'en-US';
                     utterance.rate = options.rate || 1;
                     utterance.pitch = options.pitch || 1;
                     utterance.volume = options.volume || 1;
                     
-                    if (options.onstart) options.onstart();
-                    utterance.onend = function() {
-                        if (options.onend) options.onend();
-                    };
+                    // Set up event handlers
+                    if (options.onstart) utterance.onstart = options.onstart;
+                    if (options.onend) utterance.onend = options.onend;
+                    if (options.onerror) utterance.onerror = options.onerror;
                     
-                    speechSynthesis.speak(utterance);
-                    return true;
+                    // Try to find the best available voice for the language
+                    const voices = window.speechSynthesis.getVoices();
+                    const langPrefix = utterance.lang.split('-')[0];
+                    
+                    // First try to find a voice that matches the language exactly
+                    let voice = voices.find(v => v.lang.startsWith(langPrefix));
+                    
+                    // If no exact match, try to find a voice with the same language family
+                    if (!voice) {
+                        const languageFamily = langPrefix.toLowerCase();
+                        voice = voices.find(v => v.lang.toLowerCase().startsWith(languageFamily));
+                    }
+                    
+                    // If still no match, try to find any English voice as fallback
+                    if (!voice) {
+                        voice = voices.find(v => v.lang.startsWith('en'));
+                    }
+                    
+                    if (voice) {
+                        utterance.voice = voice;
+                    }
+                    
+                    try {
+                        speechSynthesis.speak(utterance);
+                        return true;
+                    } catch (error) {
+                        console.error('Error using Web Speech API:', error);
+                        if (options.onerror) {
+                            options.onerror(error);
+                        }
+                        return false;
+                    }
                 }
                 return false;
             }
         };
+        
+        // Load voices when they become available
+        if (window.speechSynthesis) {
+            // Some browsers need this to load voices
+            window.speechSynthesis.onvoiceschanged = function() {
+                console.log('Voices loaded:', window.speechSynthesis.getVoices());
+            };
+            // Force load voices
+            window.speechSynthesis.getVoices();
+        }
     </script>
     
     <style>
