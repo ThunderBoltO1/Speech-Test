@@ -240,7 +240,25 @@ function detectLanguage(text) {
     return thaiRegex.test(text) ? 'th' : 'en';
 }
 
-// Speech Functions
+// Speech State and Utilities
+const speechState = {
+    speaking: false,
+    currentWord: null,
+    currentButton: null
+};
+
+function updateSpeakingState(isStarting, text = null, button = null) {
+    speechState.speaking = isStarting;
+    speechState.currentWord = text;
+    speechState.currentButton = button;
+    
+    if (isStarting && button) {
+        button.classList.add('ring-4', 'ring-blue-300');
+    } else if (!isStarting && button) {
+        button.classList.remove('ring-4', 'ring-blue-300');
+    }
+}
+
 function initializeVoice() {
     try {
         if ('speechSynthesis' in window) {
@@ -279,6 +297,9 @@ function speakText(text) {
     // ยกเลิกเสียงที่กำลังพูดอยู่
     window.speechSynthesis.cancel();
 
+    // หาปุ่มที่เกี่ยวข้องกับคำที่จะพูด
+    const button = document.querySelector(`.word-button[data-word="${text}"]`);
+    
     const isThai = /[\u0E00-\u0E7F]/.test(text);
     updateMixResult(text);
 
@@ -299,19 +320,19 @@ function speakText(text) {
         utterance.lang = isThai ? 'th-TH' : 'en-US';
 
         // Events
-        utterance.onstart = () => highlightSpeakingButton(text);
-        utterance.onend = () => removeSpeakingHighlight();
+        utterance.onstart = () => updateSpeakingState(true, text, button);
+        utterance.onend = () => updateSpeakingState(false);
         utterance.onerror = (event) => {
             console.error('Speech error:', event);
             showError('ไม่สามารถอ่านข้อความได้');
-            removeSpeakingHighlight();
+            updateSpeakingState(false);
         };
 
         window.speechSynthesis.speak(utterance);
     } catch (error) {
         console.error('Speech error:', error);
         showError('ไม่สามารถอ่านข้อความได้');
-        removeSpeakingHighlight();
+        updateSpeakingState(false);
     }
 }
 
