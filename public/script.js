@@ -241,37 +241,66 @@ function detectLanguage(text) {
 }
 
 // Speech Functions
+function initializeVoice() {
+    if (typeof responsiveVoice === 'undefined') {
+        console.error('ResponsiveVoice failed to load');
+        return false;
+    }
+    
+    try {
+        // ตั้งค่าเริ่มต้นสำหรับ ResponsiveVoice
+        responsiveVoice.setDefaultVoice("Thai Male");
+        responsiveVoice.setDefaultRate(0.9);    // ลดความเร็วลง
+        responsiveVoice.setDefaultPitch(1.1);   // คงระดับเสียงเดิม
+        responsiveVoice.setDefaultVolume(1);    
+
+        // Preload เสียงภาษาไทย
+        responsiveVoice.speak("", "Thai Male", { volume: 0 });
+        
+        // Cache voices
+        window._voiceCache = {
+            thai: "Thai Male",
+            english: "US English Male"
+        };
+
+        return true;
+    } catch (error) {
+        console.error('Voice initialization failed:', error);
+        return false;
+    }
+}
+
 function speakText(text) {
     if (!text) return;
 
-    // ยกเลิกเสียงที่กำลังพูดอยู่ (ถ้ามี)
-    if (typeof responsiveVoice !== 'undefined') {
-        responsiveVoice.cancel();
-    }
+    // ยกเลิกเสียงที่กำลังพูดอยู่
+    responsiveVoice.cancel();
 
-    // Detect language and update mix result
     const isThai = /[\u0E00-\u0E7F]/.test(text);
     updateMixResult(text);
     
     const speechOptions = {
-        rate: isThai ? 1.2 : 1.5,    // เพิ่มความเร็วทั้งไทยและอังกฤษ
-        pitch: isThai ? 1.1 : 1.0,   // ปรับระดับเสียงไทยให้สูงขึ้นเล็กน้อย
+        rate: isThai ? 0.9 : 1.1,      // ลดความเร็วลงทั้งไทยและอังกฤษ
+        pitch: isThai ? 1.1 : 1.0,     // คงระดับเสียงเดิม
         volume: 1,
-        onstart: () => highlightSpeakingButton(text),
-        onend: () => removeSpeakingHighlight(),
-        onerror: (error) => {
-            console.error('Speech error:', error);
-            showError('ไม่สามารถอ่านข้อความได้');
+        onstart: () => {
+            highlightSpeakingButton(text);
+            window._lastSpokenText = text;
+        },
+        onend: () => {
             removeSpeakingHighlight();
+            window._lastSpokenText = null;
         }
     };
 
     try {
-        const voice = isThai ? 'Thai Male' : 'US English Male';
+        // ใช้ cached voice
+        const voice = window._voiceCache[isThai ? 'thai' : 'english'];
         responsiveVoice.speak(text, voice, speechOptions);
     } catch (error) {
-        console.error('ResponsiveVoice error:', error);
+        console.error('Speech error:', error);
         showError('ไม่สามารถอ่านข้อความได้');
+        removeSpeakingHighlight();
     }
 }
 
@@ -439,9 +468,19 @@ function initializeVoice() {
     try {
         // ตั้งค่าเริ่มต้นสำหรับ ResponsiveVoice
         responsiveVoice.setDefaultVoice("Thai Male");
-        responsiveVoice.setDefaultRate(1.2);    // ตั้งความเร็วเริ่มต้น
-        responsiveVoice.setDefaultPitch(1.1);   // ตั้งระดับเสียงเริ่มต้น
-        responsiveVoice.setDefaultVolume(1);    // ตั้งความดังเริ่มต้น
+        responsiveVoice.setDefaultRate(0.9);    // ลดความเร็วลง
+        responsiveVoice.setDefaultPitch(1.1);   // คงระดับเสียงเดิม
+        responsiveVoice.setDefaultVolume(1);    
+
+        // Preload เสียงภาษาไทย
+        responsiveVoice.speak("", "Thai Male", { volume: 0 });
+        
+        // Cache voices
+        window._voiceCache = {
+            thai: "Thai Male",
+            english: "US English Male"
+        };
+
         return true;
     } catch (error) {
         console.error('Voice initialization failed:', error);
