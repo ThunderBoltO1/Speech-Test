@@ -271,52 +271,46 @@ function initializeVoice() {
 }
 
 function speakText(text) {
-    if (!text) return;
-    responsiveVoice.cancel();
-
-    const isThai = /[\u0E00-\u0E7F]/.test(text);
-    updateMixResult(text);
-
-    // เลือกชื่อเสียงผู้ชายแบบเจาะจงสำหรับภาษาอังกฤษ
-    let voice;
-    if (isThai) {
-        voice = "Thai Male";
-    } else {
-        // ลองเลือกเสียงผู้ชายภาษาอังกฤษที่มีใน responsiveVoice
-        // ลำดับความสำคัญ: US English Male > UK English Male > English Male > US English > UK English > English
-        const preferredVoices = [
-            "US English Male",
-            "UK English Male",
-            "English Male",
-            "US English",
-            "UK English",
-            "English"
-        ];
-        voice = preferredVoices.find(v => responsiveVoice.voiceSupport()[v]);
-        if (!voice) voice = "US English Male"; // fallback
-    }
-
-    const speechOptions = {
-        rate: isThai ? 0.9 : 1.0,
-        pitch: isThai ? 1.1 : 1.0,
-        volume: 1,
-        onstart: () => {
-            highlightSpeakingButton(text);
-            window._lastSpokenText = text;
-        },
-        onend: () => {
-            removeSpeakingHighlight();
-            window._lastSpokenText = null;
-        }
-    };
-
     try {
-        responsiveVoice.speak(text, voice, speechOptions);
+        if (responsiveVoice) {
+            // Highlight the speaking button
+            highlightSpeakingButton(text);
+            
+            // Determine language and set appropriate voice
+            const isThai = isThaiText(text);
+            const voice = isThai ? 'Thai Female' : 'UK English Male';
+            
+            // Speak the text with appropriate voice
+            responsiveVoice.speak(text, voice, {
+                onend: removeSpeakingHighlight,
+                onerror: (error) => {
+                    console.error('Speech error:', error);
+                    removeSpeakingHighlight();
+                },
+                // Adjust voice parameters for better quality
+                rate: isThai ? 0.9 : 1.0,
+                pitch: isThai ? 1.1 : 1.0,
+                volume: 1.0
+            });
+        } else {
+            console.warn('ResponsiveVoice not available');
+            // Fallback to Web Speech API if available
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                // Set language based on text
+                utterance.lang = isThaiText(text) ? 'th-TH' : 'en-US';
+                utterance.onend = removeSpeakingHighlight;
+                speechSynthesis.speak(utterance);
+            }
+        }
     } catch (error) {
-        console.error('Speech error:', error);
-        showError('ไม่สามารถอ่านข้อความได้');
-        removeSpeakingHighlight();
+        console.error('Error in speakText:', error);
+        showError('Error speaking text');
     }
+}
+
+function isThaiText(text) {
+    return /[\u0E00-\u0E7F]/.test(text);
 }
 
 function highlightSpeakingButton(text) {
@@ -473,71 +467,6 @@ function showToast(message) {
     }, 3000);
 }
 
-// Initialize ResponsiveVoice with error handling
-function initializeVoice() {
-    try {
-        if ('speechSynthesis' in window) {
-            window._voiceSettings = {
-                defaultParams: {
-                    rate: 0.85,
-                    pitch: 0.7,
-                    volume: 1
-                }
-            };
-
-            // Keywords for male voices (English/Thai)
-            const MALE_VOICE_KEYWORDS = [
-                'male', 'man', 'guy', 'deep', 'john', 'mike', 'david', 'alex', 'daniel', 'james', 'paul', 'brian', 'fred', 'tim', 'tom', 'matt', 'george', 'peter', 'sam', 'steve', 'bruce', 'alan', 'eric', 'frank', 'greg', 'jack', 'jeff', 'joe', 'mark', 'phil', 'ron', 'scott', 'tony', 'will', 'liam', 'ben', 'henry', 'harry', 'leo', 'oscar', 'theo', 'luke', 'max', 'arthur', 'logan', 'isaac', 'lucas', 'hugo', 'thomas', 'oliver', 'ethan', 'jacob', 'noah', 'william', 'joshua', 'samuel', 'mason', 'sebastian', 'elijah', 'aiden', 'matthew', 'joseph', 'dylan', 'ryan', 'nathan', 'alexander', 'james', 'benjamin', 'jackson', 'levi', 'owen', 'gabriel', 'carter', 'jayden', 'johnny', 'patrick', 'robert', 'richard', 'charles', 'edward', 'donald', 'ronald', 'anthony', 'kevin', 'jason', 'michael', 'willard', 'voice', 'barry', 'ralph', 'voiceone', 'voicetwo', 'voice3', 'voice4', 'voice5', 'voice6', 'voice7', 'voice8', 'voice9', 'voice10', 'ชาย', 'ผู้ชาย'
-            ];
-
-            speechSynthesis.onvoiceschanged = () => {
-                const voices = speechSynthesis.getVoices();
-                // Find best male voice for each language
-                const findBestMaleVoice = (language, isEnglish = false) => {
-                    let v = voices.find(v =>
-                        v.lang === language &&
-                        MALE_VOICE_KEYWORDS.some(keyword => v.name.toLowerCase().includes(keyword))
-                    );
-                    if (v) return v;
-                    // For English, try gender property if available
-                    if (isEnglish) {
-                        v = voices.find(v =>
-                            v.lang === language &&
-                            v.gender && v.gender.toLowerCase() === 'male'
-                        );
-                        if (v) return v;
-                    }
-                    v = voices.find(v =>
-                        v.lang === language &&
-                        !['male', 'men'].some(keyword => v.name.toLowerCase().includes(keyword))
-                    );
-                    if (v) return v;
-                    v = voices.find(v => v.lang === language);
-                    if (v) return v;
-                    return voices[0];
-                };
-
-                window._voiceSettings.voices = {
-                    thai: findBestMaleVoice('th-TH'),
-                    english: findBestMaleVoice('en-US', true)
-                };
-
-                // Log selected voices
-                console.log('Selected voices:', {
-                    thai: window._voiceSettings.voices.thai?.name,
-                    english: window._voiceSettings.voices.english?.name
-                });
-            };
-
-            speechSynthesis.getVoices();
-            return true;
-        }
-        throw new Error('Browser does not support speech synthesis');
-    } catch (error) {
-        console.error('Voice initialization failed:', error);
-        return false;
-    }
-}
 
 function preloadVoices() {
     // Preload Thai voice
