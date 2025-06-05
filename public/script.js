@@ -303,12 +303,13 @@ function sendSpeakMessage(text) {
     });
 }
 
-// ฟังก์ชันรับข้อความพูดจาก Firebase (เฉพาะเครื่อง 1)
+// ฟังก์ชันรับข้อความพูดจาก Firebase (พูดทุกข้อความใหม่ที่เข้ามา)
 function listenSpeakMessages() {
     let lastTimestamp = 0;
     db.ref('speakMessages').on('child_added', (snapshot) => {
         const data = snapshot.val();
-        if (selectedDevice === 1 && data && data.timestamp > lastTimestamp) {
+        // ไม่ต้องเช็ค selectedDevice แล้ว
+        if (data && data.timestamp > lastTimestamp) {
             lastTimestamp = data.timestamp;
             speakText(data.text, true); // true = ข้ามการส่งซ้ำ
         }
@@ -316,17 +317,14 @@ function listenSpeakMessages() {
 }
 listenSpeakMessages();
 
-// --- ปรับ speakText ให้ใช้ Firebase แทน WebSocket ---
+// --- speakText Firebase ---
 function speakText(text, skipSend = false) {
     try {
+       
         if (selectedDevice === 2 && !skipSend) {
-            // ถ้าเลือกเครื่อง 2 ให้ส่งข้อความไปอีกเครื่องผ่าน Firebase
             sendSpeakMessage(text);
-            highlightSpeakingButton(text);
-            setTimeout(removeSpeakingHighlight, 1500);
-            return;
         }
-
+        
         if (responsiveVoice) {
             highlightSpeakingButton(text);
             const isThai = isThaiText(text);
@@ -853,10 +851,10 @@ document.head.appendChild(styleElement);
 function renderDeviceSelector() {
     if (document.getElementById('device-1-btn')) return; // ป้องกันซ้ำ
     const container = document.createElement('div');
-    container.className = 'fixed top-4 right-4 z-50 flex gap-2';
+    container.className = 'fixed top-4 right-4 z-50 flex gap-2 bg-white bg-opacity-80 rounded-lg shadow-lg px-4 py-2 border border-blue-200';
     container.innerHTML = `
-        <button id="device-1-btn" class="px-4 py-2 rounded bg-blue-500 text-white ${selectedDevice === 1 ? 'font-bold ring-2 ring-blue-300' : ''}">เครื่อง 1</button>
-        <button id="device-2-btn" class="px-4 py-2 rounded bg-green-500 text-white ${selectedDevice === 2 ? 'font-bold ring-2 ring-green-300' : ''}">เครื่อง 2</button>
+        <button id="device-1-btn" class="px-4 py-2 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 text-base md:text-lg ${selectedDevice === 1 ? 'font-bold ring-2 ring-blue-400 bg-blue-500 text-white shadow' : 'bg-white text-blue-700 border border-blue-300 hover:bg-blue-100'}">เครื่อง 1</button>
+        <button id="device-2-btn" class="px-4 py-2 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-green-400 text-base md:text-lg ${selectedDevice === 2 ? 'font-bold ring-2 ring-green-400 bg-green-500 text-white shadow' : 'bg-white text-green-700 border border-green-300 hover:bg-green-100'}">เครื่อง 2</button>
     `;
     document.body.appendChild(container);
 
@@ -871,13 +869,11 @@ function renderDeviceSelector() {
 }
 
 function updateDeviceSelectorUI() {
-    document.getElementById('device-1-btn').classList.toggle('font-bold', selectedDevice === 1);
-    document.getElementById('device-1-btn').classList.toggle('ring-2', selectedDevice === 1);
-    document.getElementById('device-1-btn').classList.toggle('ring-blue-300', selectedDevice === 1);
-
-    document.getElementById('device-2-btn').classList.toggle('font-bold', selectedDevice === 2);
-    document.getElementById('device-2-btn').classList.toggle('ring-2', selectedDevice === 2);
-    document.getElementById('device-2-btn').classList.toggle('ring-green-300', selectedDevice === 2);
+    const btn1 = document.getElementById('device-1-btn');
+    const btn2 = document.getElementById('device-2-btn');
+    if (!btn1 || !btn2) return;
+    btn1.className = `px-4 py-2 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 text-base md:text-lg ${selectedDevice === 1 ? 'font-bold ring-2 ring-blue-400 bg-blue-500 text-white shadow' : 'bg-white text-blue-700 border border-blue-300 hover:bg-blue-100'}`;
+    btn2.className = `px-4 py-2 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-green-400 text-base md:text-lg ${selectedDevice === 2 ? 'font-bold ring-2 ring-green-400 bg-green-500 text-white shadow' : 'bg-white text-green-700 border border-green-300 hover:bg-green-100'}`;
 }
 
 // เรียก renderDeviceSelector เมื่อโหลดหน้า
