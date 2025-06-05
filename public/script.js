@@ -353,7 +353,7 @@ const firebaseConfig = {
   projectId: "speech-ram",
   storageBucket: "speech-ram.firebasestorage.app",
   messagingSenderId: "102365767024",
-  appId: "1:102365767024:web:37cbf37f56433238a3dbb5",
+  appId: "1:102365767024:web:37cbf37f
   measurementId: "G-3G8KZ0GK1L"
 };
 
@@ -1048,3 +1048,47 @@ document.addEventListener('DOMContentLoaded', () => {
     renderDeviceSelector();
     // ...existing code...
 });
+
+// Add new function to save word order
+async function saveWordOrder() {
+    const sheetName = CATEGORY_SHEETS[currentCategory];
+    
+    try {
+        // 1. รวบรวมคำที่เรียงลำดับใหม่
+        const newWords = Array.from(elements.buttonContainer.querySelectorAll('.word-button'))
+            .map(button => button.getAttribute('data-word'));
+
+        // 2. อัพเดทข้อมูลใน sheet
+        const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A1:A${newWords.length}?valueInputOption=RAW`;
+        const updateResponse = await fetch(updateUrl, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                range: `${sheetName}!A1:A${newWords.length}`,
+                majorDimension: "COLUMNS", // ส่งเป็น column
+                values: [newWords] // ส่งข้อมูลในรูปแบบ array เดียว
+            })
+        });
+
+        if (!updateResponse.ok) {
+            if (updateResponse.status === 401) {
+                showError('การยืนยันตัวตนล้มเหลว กรุณาล็อกอินใหม่');
+                authenticate();
+                return;
+            }
+            const errorData = await updateResponse.json();
+            throw new Error(errorData.error?.message || updateResponse.statusText);
+        }
+
+        showToast('บันทึกลำดับคำสำเร็จ');
+    } catch (error) {
+        console.error('Error saving word order:', error);
+        showError('ไม่สามารถบันทึกลำดับคำได้: ' + error.message);
+        
+        // Reload the category data to ensure UI is in sync with server
+        loadCategoryData();
+    }
+}
