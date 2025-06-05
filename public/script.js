@@ -240,100 +240,106 @@ function detectLanguage(text) {
     return thaiRegex.test(text) ? 'th' : 'en';
 }
 
-// Speech State and Utilities
-const speechState = {
-    speaking: false,
-    currentWord: null,
-    currentButton: null
-};
-
-function updateSpeakingState(isStarting, text = null, button = null) {
-    speechState.speaking = isStarting;
-    speechState.currentWord = text;
-    speechState.currentButton = button;
-    
-    if (isStarting && button) {
-        button.classList.add('ring-4', 'ring-blue-300');
-    } else if (!isStarting && button) {
-        button.classList.remove('ring-4', 'ring-blue-300');
-    }
-}
-
+// Speech Functions
 function initializeVoice() {
+    if (typeof responsiveVoice === 'undefined') {
+        console.error('ResponsiveVoice failed to load');
+        return false;
+    }
+    
     try {
-        if ('speechSynthesis' in window) {
-            window._voiceSettings = {
-                defaultParams: {
-                    rate: 0.9,
-                    pitch: 1.1,
-                    volume: 1
+        // Set default voice and settings
+        responsiveVoice.setDefaultVoice("Thai Male");
+        responsiveVoice.setDefaultRate(0.9);
+        responsiveVoice.setDefaultPitch(1.1);
+        responsiveVoice.setDefaultVolume(1);    
+
+        // Initialize voice cache as a global variable
+        if (!window._voices) {
+            window._voices = {
+                thai: {
+                    name: "Thai Male",
+                    loaded: false
+                },
+                english: {
+                    name: "US English Male",
+                    loaded: false
                 }
             };
             
-            // เตรียม voices
-            speechSynthesis.onvoiceschanged = () => {
-                const voices = speechSynthesis.getVoices();
-                window._voiceSettings.voices = {
-                    thai: voices.find(v => v.lang === 'th-TH') || voices[0],
-                    english: voices.find(v => v.lang === 'en-US') || voices[0]
-                };
-            };
-            
-            // เรียกครั้งแรกเผื่อ voices พร้อมแล้ว
-            speechSynthesis.getVoices();
-            
-            return true;
+            // Preload voices
+            preloadVoices();
         }
-        throw new Error('Browser does not support speech synthesis');
+
+        return true;
     } catch (error) {
         console.error('Voice initialization failed:', error);
         return false;
     }
 }
 
+function preloadVoices() {
+    // Preload Thai voice
+    responsiveVoice.speak("", "Thai Male", { 
+        volume: 0,
+        onend: () => window._voices.thai.loaded = true 
+    });
+    
+    // Preload English voice
+    responsiveVoice.speak("", "US English Male", { 
+        volume: 0,
+        onend: () => window._voices.english.loaded = true 
+    });
+}
+
 function speakText(text) {
     if (!text) return;
 
-    // ยกเลิกเสียงที่กำลังพูดอยู่
-    window.speechSynthesis.cancel();
+    // Cancel any ongoing speech
+    responsiveVoice.cancel();
 
-    // หาปุ่มที่เกี่ยวข้องกับคำที่จะพูด
-    const button = document.querySelector(`.word-button[data-word="${text}"]`);
-    
     const isThai = /[\u0E00-\u0E7F]/.test(text);
     updateMixResult(text);
+    
+    // Get voice configuration
+    const voiceType = isThai ? 'thai' : 'english';
+    const voice = window._voices?.[voiceType]?.name || (isThai ? "Thai Male" : "US English Male");
+    
+    const speechOptions = {
+        rate: isThai ? 0.9 : 1.1,
+        pitch: isThai ? 1.1 : 1.0,
+        volume: 1,
+        onstart: () => {
+            highlightSpeakingButton(text);
+            window._lastSpokenText = text;
+        },
+        onend: () => {
+            removeSpeakingHighlight();
+            window._lastSpokenText = null;
+        }
+    };
 
     try {
-        const utterance = new SpeechSynthesisUtterance(text);
-        
-        // ตั้งค่าพื้นฐาน
-        Object.assign(utterance, window._voiceSettings?.defaultParams || {});
-        
-        // เลือกเสียงตามภาษา
-        if (window._voiceSettings?.voices) {
-            utterance.voice = isThai ? 
-                window._voiceSettings.voices.thai : 
-                window._voiceSettings.voices.english;
-        }
-        
-        // ตั้งค่าภาษา
-        utterance.lang = isThai ? 'th-TH' : 'en-US';
-
-        // Events
-        utterance.onstart = () => updateSpeakingState(true, text, button);
-        utterance.onend = () => updateSpeakingState(false);
-        utterance.onerror = (event) => {
-            console.error('Speech error:', event);
-            showError('ไม่สามารถอ่านข้อความได้');
-            updateSpeakingState(false);
-        };
-
-        window.speechSynthesis.speak(utterance);
+        responsiveVoice.speak(text, voice, speechOptions);
     } catch (error) {
         console.error('Speech error:', error);
         showError('ไม่สามารถอ่านข้อความได้');
-        updateSpeakingState(false);
+        removeSpeakingHighlight();
     }
+}
+
+function highlightSpeakingButton(text) {
+    document.querySelectorAll('.word-button').forEach(button => {
+        if (button.getAttribute('data-word') === text) {
+            button.classList.add('ring-4', 'ring-blue-300');
+        }
+    });
+}
+
+function removeSpeakingHighlight() {
+    document.querySelectorAll('.word-button').forEach(button => {
+        button.classList.remove('ring-4', 'ring-blue-300');
+    });
 }
 
 // Modal Functions
@@ -470,7 +476,7 @@ function showToast(message) {
     toast.textContent = message;
     
     document.body.appendChild(toast);
-
+    
     setTimeout(() => {
         toast.remove();
     }, 3000);
@@ -478,35 +484,54 @@ function showToast(message) {
 
 // Initialize ResponsiveVoice with error handling
 function initializeVoice() {
+    if (typeof responsiveVoice === 'undefined') {
+        console.error('ResponsiveVoice failed to load');
+        return false;
+    }
+    
     try {
-        if ('speechSynthesis' in window) {
-            window._voiceSettings = {
-                defaultParams: {
-                    rate: 0.9,
-                    pitch: 1.1,
-                    volume: 1
+        // Set default voice and settings
+        responsiveVoice.setDefaultVoice("Thai Male");
+        responsiveVoice.setDefaultRate(0.9);
+        responsiveVoice.setDefaultPitch(1.1);
+        responsiveVoice.setDefaultVolume(1);    
+
+        // Initialize voice cache as a global variable
+        if (!window._voices) {
+            window._voices = {
+                thai: {
+                    name: "Thai Male",
+                    loaded: false
+                },
+                english: {
+                    name: "US English Male",
+                    loaded: false
                 }
             };
             
-            // เตรียม voices
-            speechSynthesis.onvoiceschanged = () => {
-                const voices = speechSynthesis.getVoices();
-                window._voiceSettings.voices = {
-                    thai: voices.find(v => v.lang === 'th-TH') || voices[0],
-                    english: voices.find(v => v.lang === 'en-US') || voices[0]
-                };
-            };
-            
-            // เรียกครั้งแรกเผื่อ voices พร้อมแล้ว
-            speechSynthesis.getVoices();
-            
-            return true;
+            // Preload voices
+            preloadVoices();
         }
-        throw new Error('Browser does not support speech synthesis');
+
+        return true;
     } catch (error) {
         console.error('Voice initialization failed:', error);
         return false;
     }
+}
+
+function preloadVoices() {
+    // Preload Thai voice
+    responsiveVoice.speak("", "Thai Male", { 
+        volume: 0,
+        onend: () => window._voices.thai.loaded = true 
+    });
+    
+    // Preload English voice
+    responsiveVoice.speak("", "US English Male", { 
+        volume: 0,
+        onend: () => window._voices.english.loaded = true 
+    });
 }
 
 // Initialize voice on page load
