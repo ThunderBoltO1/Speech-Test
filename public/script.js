@@ -320,11 +320,13 @@ listenSpeakMessages();
 // --- speakText Firebase ---
 function speakText(text, skipSend = false) {
     try {
-       
-        if (selectedDevice === 2 && !skipSend) {
+        // ป้องกันการพูดซ้ำสำหรับภาษาอังกฤษ (เฉพาะรอบที่ส่งมาจาก Firebase)
+        if (!skipSend && selectedDevice === 2) {
             sendSpeakMessage(text);
+            // ถ้าเป็นภาษาอังกฤษ ให้ return ไม่พูดเอง (พูดเฉพาะรอบที่รับจาก Firebase)
+            if (!isThaiText(text)) return;
         }
-        
+        // ทุกเครื่องพูดเองเสมอ (ภาษาไทยพูดได้ทั้งสองรอบ, ภาษาอังกฤษพูดเฉพาะรอบเดียว)
         if (responsiveVoice) {
             highlightSpeakingButton(text);
             const isThai = isThaiText(text);
