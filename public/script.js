@@ -277,7 +277,25 @@ function speakText(text) {
     const isThai = /[\u0E00-\u0E7F]/.test(text);
     updateMixResult(text);
 
-    const voice = isThai ? "Thai Male" : "US English Male";
+    // เลือกชื่อเสียงผู้ชายแบบเจาะจงสำหรับภาษาอังกฤษ
+    let voice;
+    if (isThai) {
+        voice = "Thai Male";
+    } else {
+        // ลองเลือกเสียงผู้ชายภาษาอังกฤษที่มีใน responsiveVoice
+        // ลำดับความสำคัญ: US English Male > UK English Male > English Male > US English > UK English > English
+        const preferredVoices = [
+            "US English Male",
+            "UK English Male",
+            "English Male",
+            "US English",
+            "UK English",
+            "English"
+        ];
+        voice = preferredVoices.find(v => responsiveVoice.voiceSupport()[v]);
+        if (!voice) voice = "US English Male"; // fallback
+    }
+
     const speechOptions = {
         rate: isThai ? 0.9 : 1.0,
         pitch: isThai ? 1.1 : 1.0,
