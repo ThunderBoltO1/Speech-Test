@@ -837,7 +837,17 @@ async function getSheetId(sheetName) {
 function initializeDragAndDrop() {
     const container = elements.buttonContainer;
     let draggedElement = null;
+    let touchTimeout;
+    let startY;
 
+    // Prevent text selection during drag
+    container.addEventListener('selectstart', (e) => {
+        if (e.target.classList.contains('word-button')) {
+            e.preventDefault();
+        }
+    });
+
+    // Mouse Events
     container.addEventListener('dragstart', (e) => {
         if (!e.target.classList.contains('word-button')) return;
         draggedElement = e.target;
@@ -869,41 +879,67 @@ function initializeDragAndDrop() {
             targetButton.parentNode.insertBefore(draggedElement, targetButton);
         }
     });
-}
 
-// Add new function to save word order
-async function saveWordOrder() {
-    const words = Array.from(elements.buttonContainer.querySelectorAll('.word-button'))
-        .map(button => button.getAttribute('data-word'));
+    // Touch Events
+    container.addEventListener('touchstart', (e) => {
+        if (!e.target.classList.contains('word-button')) return;
+        const touch = e.touches[0];
+        startY = touch.pageY;
+        
+        touchTimeout = setTimeout(() => {
+            draggedElement = e.target;
+            draggedElement.classList.add('dragging');
+        }, 200);
+    }, { passive: true });
 
-    const sheetName = CATEGORY_SHEETS[currentCategory];
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A1:A${words.length}?valueInputOption=RAW`;
+    container.addEventListener('touchmove', (e) => {
+        if (!draggedElement) return;
+        e.preventDefault();
 
-    try {
-        const response = await fetch(url, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                range: `${sheetName}!A1:A${words.length}`,
-                majorDimension: "ROWS",
-                values: words.map(word => [word])
-            })
-        });
+        const touch = e.touches[0];
+        const target = document.elementFromPoint(touch.pageX, touch.pageY);
+        if (!target) return;
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error?.message || response.statusText);
+        const targetButton = target.closest('.word-button');
+        if (!targetButton || targetButton === draggedElement) return;
+
+        const boundingRect = targetButton.getBoundingClientRect();
+        const isAfter = touch.pageY > boundingRect.top + boundingRect.height / 2;
+
+        if (isAfter) {
+            targetButton.parentNode.insertBefore(draggedElement, targetButton.nextSibling);
+        } else {
+            targetButton.parentNode.insertBefore(draggedElement, targetButton);
         }
+    });
 
-        // แสดง toast เมื่อบันทึกสำเร็จ
-        showToast('บันทึกลำดับคำสำเร็จ');
-    } catch (error) {
-        console.error('Error saving word order:', error);
-        showError('ไม่สามารถบันทึกลำดับคำได้: ' + error.message);
-    }
+    container.addEventListener('touchend', (e) => {
+        clearTimeout(touchTimeout);
+        if (!draggedElement) return;
+
+        draggedElement.classList.remove('dragging');
+        saveWordOrder();
+        draggedElement = null;
+    });
+
+    // Cancel drag on scroll
+    container.addEventListener('scroll', () => {
+        clearTimeout(touchTimeout);
+        if (draggedElement) {
+            draggedElement.classList.remove('dragging');
+            draggedElement = null;
+        }
+    });
+
+    // Cancel drag if touch moves significantly in Y direction (indicates scroll attempt)
+    container.addEventListener('touchmove', (e) => {
+        if (!draggedElement && touchTimeout) {
+            const touch = e.touches[0];
+            if (Math.abs(touch.pageY - startY) > 10) {
+                clearTimeout(touchTimeout);
+            }
+        }
+    }, { passive: true });
 }
 
 // Update the CSS for better drag and drop visual feedback
@@ -912,6 +948,8 @@ const dragDropStyles = `
         cursor: grab;
         touch-action: none;
         user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
     }
     .word-button:active {
         cursor: grabbing;
@@ -922,6 +960,7 @@ const dragDropStyles = `
         background-color: #2563eb;
         transform: scale(1.02);
         z-index: 1000;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
     }
 `;
 
