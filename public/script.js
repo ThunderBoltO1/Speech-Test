@@ -141,13 +141,19 @@ async function loadCategoryData() {
 
 function renderButtons(words = []) {
     if (elements.buttonContainer) {
-        // สร้าง HTML สำหรับปุ่มคำศัพท์
         elements.buttonContainer.innerHTML = words.map(word => `
-            <button class="word-button flex-1 text-center bg-blue-500 text-white text-4xl px-6 py-10 rounded-lg m-2 hover:bg-blue-600 transition-all${isSelectMode ? ' cursor-pointer' : ''}"
-                    data-word="${word}" 
-                    draggable="true">
+            <button class="word-button flex-1 text-center 
+                bg-gradient-to-br from-blue-500 to-blue-600
+                hover:from-blue-600 hover:to-blue-700
+                text-white text-4xl px-6 py-10 rounded-xl m-2 
+                transition-all duration-300 ease-in-out
+                transform hover:scale-105 hover:shadow-lg
+                active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-300/50
+                ${isSelectMode ? 'cursor-pointer' : ''}"
+                data-word="${word}" 
+                draggable="true">
                 ${word}
-                ${isSelectMode ? `<span class="selection-indicator ml-2 text-green-500">${selectedWords.includes(word) ? '✔️' : ''}</span>` : ''}
+                ${isSelectMode ? `<span class="selection-indicator ml-2 text-green-500 transform transition-all duration-300">${selectedWords.includes(word) ? '✔️' : ''}</span>` : ''}
             </button>
         `).join('');
         
@@ -229,8 +235,7 @@ function removeSelectedWord(word) {
 
 function updateMixResult(text = '') {
     if (elements.mixResult) {
-        // ถ้า text ถูกส่งมา (กรณีพูดคำผสม) ให้แสดง text นั้น
-        // ถ้าไม่มีก็แสดง selectedWords.join(' ')
+        elements.mixResult.className = 'bg-gradient-to-br from-blue-700 to-blue-800 text-white text-xl md:text-2xl font-bold px-4 md:px-6 py-4 md:py-8 rounded-xl mx-2 shadow-lg w-full md:w-auto text-center transition-all duration-300 transform hover:shadow-xl';
         elements.mixResult.textContent = text || selectedWords.join(' ') || 'ยังไม่ได้เลือกคำ';
     }
 }
@@ -324,7 +329,10 @@ function speakText(text, skipSend = false) {
             sendSpeakMessage(text);
             showToast('ข้อความถูกส่งแล้ว');
             // ถ้าเป็นภาษาอังกฤษ ให้ return ไม่พูดเอง (พูดเฉพาะรอบที่รับจาก Firebase)
-            if (!isThaiText(text)) return;
+            if (!isThaiText(text)) {
+                updateMixResult(text); // อัปเดต mixResult แม้จะไม่พูดเอง
+                return;
+            }
         }
         // ทุกเครื่องพูดเองเสมอ (ภาษาไทยพูดได้ทั้งสองรอบ, ภาษาอังกฤษพูดเฉพาะรอบเดียว)
         if (responsiveVoice) {
@@ -350,6 +358,7 @@ function speakText(text, skipSend = false) {
                 speechSynthesis.speak(utterance);
             }
         }
+        updateMixResult(text); // อัปเดต mixResult ทุกครั้งที่พูด
     } catch (error) {
         console.error('Error in speakText:', error);
         showError('Error speaking text');
@@ -492,25 +501,40 @@ function updateMixingUI() {
 // Error Handling
 function showError(message) {
     const errorToast = document.createElement('div');
-    errorToast.className = 'fixed bottom-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg z-50';
+    errorToast.className = `fixed bottom-4 right-4 
+        bg-gradient-to-r from-red-500 to-red-400
+        text-white px-6 py-3 rounded-xl shadow-lg z-50
+        opacity-0 transition-all duration-300 ease-in-out
+        border-l-4 border-red-600`;
     errorToast.textContent = message;
     
     document.body.appendChild(errorToast);
     
+    // Trigger animation
+    setTimeout(() => errorToast.classList.add('opacity-100'), 10);
+    
     setTimeout(() => {
-        errorToast.remove();
+        errorToast.classList.remove('opacity-100');
+        setTimeout(() => errorToast.remove(), 300);
     }, 5000);
 }
 
 function showToast(message) {
     const toast = document.createElement('div');
-    toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+    toast.className = `fixed bottom-4 left-1/2 transform -translate-x-1/2 
+        bg-gradient-to-r from-green-500 to-green-400 
+        text-white px-6 py-3 rounded-xl shadow-lg z-50
+        opacity-0 transition-all duration-300 ease-in-out`;
     toast.textContent = message;
     
     document.body.appendChild(toast);
     
+    // Trigger animation
+    setTimeout(() => toast.classList.add('opacity-100'), 10);
+    
     setTimeout(() => {
-        toast.remove();
+        toast.classList.remove('opacity-100');
+        setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
 
@@ -849,28 +873,18 @@ styleElement.setAttribute('data-dragdrop-styles', '');
 styleElement.textContent = dragDropStyles;
 document.head.appendChild(styleElement);
 
-// UI สำหรับเลือกเครื่อง (เพิ่มใน header)
+// UI สำหรับเลือกเครื่อง (Floating, modern style)
 function renderDeviceSelector() {
     if (document.getElementById('device-1-btn')) return; // ป้องกันซ้ำ
     const container = document.createElement('div');
-    container.className = 'flex gap-4 justify-center items-center mt-4 mb-2';
+    container.id = 'device-selector-floating';
+    container.className = `fixed top-4 right-4 z-50 flex gap-3 items-center p-3 bg-gradient-to-br from-blue-400 via-white to-green-300 rounded-2xl shadow-2xl border border-blue-200 backdrop-blur-md transition-all duration-300`;
     container.innerHTML = `
-        <span class="text-base md:text-lg font-semibold text-gray-700 mr-2">เลือกเครื่อง:</span>
+        <span class="hidden md:inline text-base font-semibold text-gray-700 mr-2 drop-shadow">เลือกเครื่อง:</span>
         <button id="device-1-btn" class="px-5 py-2 rounded-full transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 text-base md:text-lg shadow-md border-2 ${selectedDevice === 1 ? 'font-bold ring-2 ring-blue-400 bg-gradient-to-r from-blue-500 to-blue-400 text-white border-blue-500 scale-105' : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-100'}">เครื่อง 1</button>
         <button id="device-2-btn" class="px-5 py-2 rounded-full transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-green-400 text-base md:text-lg shadow-md border-2 ${selectedDevice === 2 ? 'font-bold ring-2 ring-green-400 bg-gradient-to-r from-green-500 to-green-400 text-white border-green-500 scale-105' : 'bg-white text-green-700 border-green-300 hover:bg-green-100'}">เครื่อง 2</button>
     `;
-    // แทรกเข้าไปใน header (หลัง h1)
-    const header = document.querySelector('header');
-    if (header) {
-        const h1 = header.querySelector('h1');
-        if (h1 && h1.parentNode) {
-            h1.parentNode.insertBefore(container, h1.nextSibling);
-        } else {
-            header.appendChild(container);
-        }
-    } else {
-        document.body.appendChild(container);
-    }
+    document.body.appendChild(container);
 
     document.getElementById('device-1-btn').onclick = () => {
         selectedDevice = 1;
