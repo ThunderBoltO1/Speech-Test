@@ -264,31 +264,37 @@ function initializeVoice() {
         if ('speechSynthesis' in window) {
             window._voiceSettings = {
                 defaultParams: {
-                    rate: 0.75,     // ช้าลง
-                    pitch: 0.5,     // ลดความสูงของเสียงลงมากๆ 
+                    rate: 0.85,     // ปรับความเร็วให้เหมาะสม
+                    pitch: 0.7,     // ทุ้มแต่ไม่มากเกินไป
                     volume: 1
                 }
             };
-            
-            // กำหนดค่าสำหรับค้นหาเสียงผู้ชาย
-            const MALE_VOICE_KEYWORDS = ['male', 'man', 'guy', 'deep'];
-            
+
+            // คำค้นหาเสียงผู้ชายที่หลากหลายขึ้น
+            const MALE_VOICE_KEYWORDS = ['male', 'man', 'boy', 'deep', 'ชาย', 'ผู้ชาย'];
+
             speechSynthesis.onvoiceschanged = () => {
                 const voices = speechSynthesis.getVoices();
                 console.log('Available voices:', voices.map(v => `${v.name} (${v.lang})`));
 
                 const findBestMaleVoice = (language) => {
-                    // ค้นหาตามลำดับความสำคัญ
-                    return (
-                        // 1. หาเสียงที่ระบุว่าเป็นผู้ชายโดยตรง
-                        voices.find(v => v.lang === language && 
-                            MALE_VOICE_KEYWORDS.some(keyword => 
-                                v.name.toLowerCase().includes(keyword))) ||
-                        // 2. หาเสียงที่เป็นภาษาที่ต้องการ
-                        voices.find(v => v.lang === language) ||
-                        // 3. ใช้เสียงแรกที่เจอถ้าไม่พบตัวเลือกอื่น
-                        voices[0]
+                    // 1. หาเสียงที่เป็นภาษาและมีคำว่า male/man/boy/deep/ชาย/ผู้ชาย
+                    let v = voices.find(v =>
+                        v.lang === language &&
+                        MALE_VOICE_KEYWORDS.some(keyword => v.name.toLowerCase().includes(keyword))
                     );
+                    if (v) return v;
+                    // 2. หาเสียงที่เป็นภาษาและไม่ใช่ female/woman/girl/หญิง/ผู้หญิง
+                    v = voices.find(v =>
+                        v.lang === language &&
+                        !['female', 'woman', 'girl', 'หญิง', 'ผู้หญิง'].some(keyword => v.name.toLowerCase().includes(keyword))
+                    );
+                    if (v) return v;
+                    // 3. หาเสียงที่เป็นภาษา
+                    v = voices.find(v => v.lang === language);
+                    if (v) return v;
+                    // 4. เสียงแรกที่เจอ
+                    return voices[0];
                 };
 
                 window._voiceSettings.voices = {
@@ -296,14 +302,13 @@ function initializeVoice() {
                     english: findBestMaleVoice('en-US')
                 };
 
-                // แสดงรายละเอียดเสียงที่เลือก
+                // log เสียงที่เลือก
                 console.log('Selected voices:', {
                     thai: window._voiceSettings.voices.thai?.name,
                     english: window._voiceSettings.voices.english?.name
                 });
             };
 
-            // เรียกครั้งแรก
             speechSynthesis.getVoices();
             return true;
         }
@@ -323,25 +328,25 @@ function speakText(text) {
 
     try {
         const utterance = new SpeechSynthesisUtterance(text);
-        
-        // ปรับแต่งเสียงให้ทุ้มต่ำ
+
+        // ปรับแต่งเสียง
         Object.assign(utterance, {
             ...window._voiceSettings?.defaultParams,
-            rate: isThai ? 0.7 : 0.8,     // ปรับให้พูดช้าลง
-            pitch: 0.5,                    // ปรับให้เสียงทุ้มมากขึ้น
+            rate: isThai ? 0.85 : 0.95, // ไทยช้ากว่าอังกฤษเล็กน้อย
+            pitch: 0.7
         });
-        
+
         // เลือกเสียง
         if (window._voiceSettings?.voices) {
-            utterance.voice = isThai ? 
-                window._voiceSettings.voices.thai : 
-                window._voiceSettings.voices.english;
+            utterance.voice = isThai
+                ? window._voiceSettings.voices.thai
+                : window._voiceSettings.voices.english;
         }
-        
+
         utterance.lang = isThai ? 'th-TH' : 'en-US';
-        
-        // เพิ่มการหยุดระหว่างคำ
-        utterance.text = text.replace(/\s+/g, ', ');
+
+        // เว้นระหว่างคำเร็วขึ้น (ใช้ comma เดียว)
+        utterance.text = text.replace(/\s+/g, ','); // ไม่มี space หลัง comma
 
         // Events
         utterance.onstart = () => {
@@ -509,31 +514,37 @@ function initializeVoice() {
         if ('speechSynthesis' in window) {
             window._voiceSettings = {
                 defaultParams: {
-                    rate: 0.75,     // ช้าลง
-                    pitch: 0.5,     // ลดความสูงของเสียงลงมากๆ 
+                    rate: 0.85,     // ปรับความเร็วให้เหมาะสม
+                    pitch: 0.7,     // ทุ้มแต่ไม่มากเกินไป
                     volume: 1
                 }
             };
-            
-            // กำหนดค่าสำหรับค้นหาเสียงผู้ชาย
-            const MALE_VOICE_KEYWORDS = ['male', 'man', 'guy', 'deep'];
-            
+
+            // คำค้นหาเสียงผู้ชายที่หลากหลายขึ้น
+            const MALE_VOICE_KEYWORDS = ['male', 'man', 'boy', 'deep', 'ชาย', 'ผู้ชาย'];
+
             speechSynthesis.onvoiceschanged = () => {
                 const voices = speechSynthesis.getVoices();
                 console.log('Available voices:', voices.map(v => `${v.name} (${v.lang})`));
 
                 const findBestMaleVoice = (language) => {
-                    // ค้นหาตามลำดับความสำคัญ
-                    return (
-                        // 1. หาเสียงที่ระบุว่าเป็นผู้ชายโดยตรง
-                        voices.find(v => v.lang === language && 
-                            MALE_VOICE_KEYWORDS.some(keyword => 
-                                v.name.toLowerCase().includes(keyword))) ||
-                        // 2. หาเสียงที่เป็นภาษาที่ต้องการ
-                        voices.find(v => v.lang === language) ||
-                        // 3. ใช้เสียงแรกที่เจอถ้าไม่พบตัวเลือกอื่น
-                        voices[0]
+                    // 1. หาเสียงที่เป็นภาษาและมีคำว่า male/man/boy/deep/ชาย/ผู้ชาย
+                    let v = voices.find(v =>
+                        v.lang === language &&
+                        MALE_VOICE_KEYWORDS.some(keyword => v.name.toLowerCase().includes(keyword))
                     );
+                    if (v) return v;
+                    // 2. หาเสียงที่เป็นภาษาและไม่ใช่ female/woman/girl/หญิง/ผู้หญิง
+                    v = voices.find(v =>
+                        v.lang === language &&
+                        !['female', 'woman', 'girl', 'หญิง', 'ผู้หญิง'].some(keyword => v.name.toLowerCase().includes(keyword))
+                    );
+                    if (v) return v;
+                    // 3. หาเสียงที่เป็นภาษา
+                    v = voices.find(v => v.lang === language);
+                    if (v) return v;
+                    // 4. เสียงแรกที่เจอ
+                    return voices[0];
                 };
 
                 window._voiceSettings.voices = {
