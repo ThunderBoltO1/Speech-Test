@@ -853,10 +853,11 @@ document.head.appendChild(styleElement);
 function renderDeviceSelector() {
     if (document.getElementById('device-1-btn')) return; // ป้องกันซ้ำ
     const container = document.createElement('div');
-    container.className = 'flex gap-2 bg-white bg-opacity-80 rounded-lg shadow-lg px-4 py-2 border border-blue-200';
+    container.className = 'flex gap-4 justify-center items-center mt-4 mb-2';
     container.innerHTML = `
-        <button id="device-1-btn" class="px-4 py-2 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 text-base md:text-lg ${selectedDevice === 1 ? 'font-bold ring-2 ring-blue-400 bg-blue-500 text-white shadow' : 'bg-white text-blue-700 border border-blue-300 hover:bg-blue-100'}">เครื่อง 1</button>
-        <button id="device-2-btn" class="px-4 py-2 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-green-400 text-base md:text-lg ${selectedDevice === 2 ? 'font-bold ring-2 ring-green-400 bg-green-500 text-white shadow' : 'bg-white text-green-700 border border-green-300 hover:bg-green-100'}">เครื่อง 2</button>
+        <span class="text-base md:text-lg font-semibold text-gray-700 mr-2">เลือกเครื่อง:</span>
+        <button id="device-1-btn" class="px-5 py-2 rounded-full transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 text-base md:text-lg shadow-md border-2 ${selectedDevice === 1 ? 'font-bold ring-2 ring-blue-400 bg-gradient-to-r from-blue-500 to-blue-400 text-white border-blue-500 scale-105' : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-100'}">เครื่อง 1</button>
+        <button id="device-2-btn" class="px-5 py-2 rounded-full transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-green-400 text-base md:text-lg shadow-md border-2 ${selectedDevice === 2 ? 'font-bold ring-2 ring-green-400 bg-gradient-to-r from-green-500 to-green-400 text-white border-green-500 scale-105' : 'bg-white text-green-700 border-green-300 hover:bg-green-100'}">เครื่อง 2</button>
     `;
     // แทรกเข้าไปใน header (หลัง h1)
     const header = document.querySelector('header');
@@ -885,8 +886,8 @@ function updateDeviceSelectorUI() {
     const btn1 = document.getElementById('device-1-btn');
     const btn2 = document.getElementById('device-2-btn');
     if (!btn1 || !btn2) return;
-    btn1.className = `px-4 py-2 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 text-base md:text-lg ${selectedDevice === 1 ? 'font-bold ring-2 ring-blue-400 bg-blue-500 text-white shadow' : 'bg-white text-blue-700 border border-blue-300 hover:bg-blue-100'}`;
-    btn2.className = `px-4 py-2 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-green-400 text-base md:text-lg ${selectedDevice === 2 ? 'font-bold ring-2 ring-green-400 bg-green-500 text-white shadow' : 'bg-white text-green-700 border border-green-300 hover:bg-green-100'}`;
+    btn1.className = `px-5 py-2 rounded-full transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 text-base md:text-lg shadow-md border-2 ${selectedDevice === 1 ? 'font-bold ring-2 ring-blue-400 bg-gradient-to-r from-blue-500 to-blue-400 text-white border-blue-500 scale-105' : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-100'}`;
+    btn2.className = `px-5 py-2 rounded-full transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-green-400 text-base md:text-lg shadow-md border-2 ${selectedDevice === 2 ? 'font-bold ring-2 ring-green-400 bg-gradient-to-r from-green-500 to-green-400 text-white border-green-500 scale-105' : 'bg-white text-green-700 border-green-300 hover:bg-green-100'}`;
 }
 
 // เรียก renderDeviceSelector เมื่อโหลดหน้า
