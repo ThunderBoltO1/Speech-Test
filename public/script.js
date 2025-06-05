@@ -177,17 +177,14 @@ function setCategory(category) {
 // Modify toggleWordSelection to ensure words from different categories can be selected
 function toggleWordSelection(word) {
     if (!isSelectMode) return;
-    
     const index = selectedWords.indexOf(word);
     if (index > -1) {
         selectedWords.splice(index, 1);
     } else {
         selectedWords.push(word);
     }
-    
     updateSelectionUI();
-    updateMixResult();
-    
+    updateMixResult(); // ให้แสดง selectedWords ใน mixResult ทันที
     // Update selection indicators across all categories
     document.querySelectorAll('.word-button').forEach(button => {
         const buttonWord = button.getAttribute('data-word');
@@ -232,6 +229,8 @@ function removeSelectedWord(word) {
 
 function updateMixResult(text = '') {
     if (elements.mixResult) {
+        // ถ้า text ถูกส่งมา (กรณีพูดคำผสม) ให้แสดง text นั้น
+        // ถ้าไม่มีก็แสดง selectedWords.join(' ')
         elements.mixResult.textContent = text || selectedWords.join(' ') || 'ยังไม่ได้เลือกคำ';
     }
 }
@@ -323,6 +322,7 @@ function speakText(text, skipSend = false) {
         // ป้องกันการพูดซ้ำสำหรับภาษาอังกฤษ (เฉพาะรอบที่ส่งมาจาก Firebase)
         if (!skipSend && selectedDevice === 2) {
             sendSpeakMessage(text);
+            showToast('ข้อความถูกส่งแล้ว');
             // ถ้าเป็นภาษาอังกฤษ ให้ return ไม่พูดเอง (พูดเฉพาะรอบที่รับจาก Firebase)
             if (!isThaiText(text)) return;
         }
