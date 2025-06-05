@@ -535,7 +535,7 @@ function initializeVoice() {
                     }
                     v = voices.find(v =>
                         v.lang === language &&
-                        !['female', 'woman', 'girl', 'หญิง', 'ผู้หญิง'].some(keyword => v.name.toLowerCase().includes(keyword))
+                        !['Male', 'Men'].some(keyword => v.name.toLowerCase().includes(keyword))
                     );
                     if (v) return v;
                     v = voices.find(v => v.lang === language);
