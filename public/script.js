@@ -300,7 +300,13 @@ function updateMixResult(text = '') {
             transition-all duration-300 transform hover:shadow-xl
             min-h-[60px] sm:min-h-[80px] md:min-h-[100px]
             flex items-center justify-center`;
-        elements.mixResult.textContent = text || selectedWords.join(' ') || 'ยังไม่ได้เลือกคำ';
+        if (text) {
+            elements.mixResult.textContent = text;
+        } else if (selectedWords.length > 0) {
+            elements.mixResult.textContent = selectedWords.join(' ');
+        } else {
+            elements.mixResult.textContent = 'ยังไม่ได้เลือกข้อความ';
+        }
     }
 }
 
