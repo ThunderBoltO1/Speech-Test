@@ -242,64 +242,28 @@ function detectLanguage(text) {
 
 // Speech Functions
 function initializeVoice() {
+    if (typeof responsiveVoice === 'undefined') {
+        console.error('ResponsiveVoice failed to load');
+        return false;
+    }
     try {
-        if ('speechSynthesis' in window) {
-            window._voiceSettings = {
-                defaultParams: {
-                    rate: 0.85,
-                    pitch: 0.7,
-                    volume: 1
-                }
-            };
+        // ตั้งค่าเสียงเริ่มต้นเป็นผู้ชาย
+        responsiveVoice.setDefaultVoice("Thai Male");
+        responsiveVoice.setDefaultRate(0.9);
+        responsiveVoice.setDefaultPitch(1.1);
+        responsiveVoice.setDefaultVolume(1);
 
-            // Keywords for male voices (English/Thai)
-            const MALE_VOICE_KEYWORDS = [
-                'male', 'man', 'guy', 'deep', 'john', 'mike', 'david', 'alex', 'daniel', 'james', 'paul', 'brian', 'fred', 'tim', 'tom', 'matt', 'george', 'peter', 'sam', 'steve', 'bruce', 'alan', 'eric', 'frank', 'greg', 'jack', 'jeff', 'joe', 'mark', 'phil', 'ron', 'scott', 'tony', 'will', 'liam', 'ben', 'henry', 'harry', 'leo', 'oscar', 'theo', 'luke', 'max', 'arthur', 'logan', 'isaac', 'lucas', 'hugo', 'thomas', 'oliver', 'ethan', 'jacob', 'noah', 'william', 'joshua', 'samuel', 'mason', 'sebastian', 'elijah', 'aiden', 'matthew', 'joseph', 'dylan', 'ryan', 'nathan', 'alexander', 'james', 'benjamin', 'jackson', 'levi', 'owen', 'gabriel', 'carter', 'jayden', 'johnny', 'patrick', 'robert', 'richard', 'charles', 'edward', 'donald', 'ronald', 'anthony', 'kevin', 'jason', 'michael', 'willard', 'voice', 'barry', 'ralph', 'voiceone', 'voicetwo', 'voice3', 'voice4', 'voice5', 'voice6', 'voice7', 'voice8', 'voice9', 'voice10', 'ชาย', 'ผู้ชาย'
-            ];
+        // เตรียม voice cache
+        window._voices = {
+            thai: { name: "Thai Male", loaded: false },
+            english: { name: "US English Male", loaded: false }
+        };
 
-            speechSynthesis.onvoiceschanged = () => {
-                const voices = speechSynthesis.getVoices();
-                // Find best male voice for each language
-                const findBestMaleVoice = (language, isEnglish = false) => {
-                    let v = voices.find(v =>
-                        v.lang === language &&
-                        MALE_VOICE_KEYWORDS.some(keyword => v.name.toLowerCase().includes(keyword))
-                    );
-                    if (v) return v;
-                    // For English, try gender property if available
-                    if (isEnglish) {
-                        v = voices.find(v =>
-                            v.lang === language &&
-                            v.gender && v.gender.toLowerCase() === 'male'
-                        );
-                        if (v) return v;
-                    }
-                    v = voices.find(v =>
-                        v.lang === language &&
-                        !['male', 'men'].some(keyword => v.name.toLowerCase().includes(keyword))
-                    );
-                    if (v) return v;
-                    v = voices.find(v => v.lang === language);
-                    if (v) return v;
-                    return voices[0];
-                };
+        // preload voices
+        responsiveVoice.speak("", "Thai Male", { volume: 0, onend: () => window._voices.thai.loaded = true });
+        responsiveVoice.speak("", "US English Male", { volume: 0, onend: () => window._voices.english.loaded = true });
 
-                window._voiceSettings.voices = {
-                    thai: findBestMaleVoice('th-TH'),
-                    english: findBestMaleVoice('en-US', true)
-                };
-
-                // Log selected voices
-                console.log('Selected voices:', {
-                    thai: window._voiceSettings.voices.thai?.name,
-                    english: window._voiceSettings.voices.english?.name
-                });
-            };
-
-            speechSynthesis.getVoices();
-            return true;
-        }
-        throw new Error('Browser does not support speech synthesis');
+        return true;
     } catch (error) {
         console.error('Voice initialization failed:', error);
         return false;
@@ -308,55 +272,47 @@ function initializeVoice() {
 
 function speakText(text) {
     if (!text) return;
+    responsiveVoice.cancel();
 
-    window.speechSynthesis.cancel();
     const isThai = /[\u0E00-\u0E7F]/.test(text);
     updateMixResult(text);
 
-    try {
-        const utterance = new SpeechSynthesisUtterance(text);
-        Object.assign(utterance, {
-            ...window._voiceSettings?.defaultParams,
-            rate: isThai ? 0.85 : 0.95,
-            pitch: 0.7
-        });
-
-        if (window._voiceSettings?.voices) {
-            utterance.voice = isThai
-                ? window._voiceSettings.voices.thai
-                : window._voiceSettings.voices.english;
+    const voice = isThai ? "Thai Male" : "US English Male";
+    const speechOptions = {
+        rate: isThai ? 0.9 : 1.0,
+        pitch: isThai ? 1.1 : 1.0,
+        volume: 1,
+        onstart: () => {
+            highlightSpeakingButton(text);
+            window._lastSpokenText = text;
+        },
+        onend: () => {
+            removeSpeakingHighlight();
+            window._lastSpokenText = null;
         }
+    };
 
-        utterance.lang = isThai ? 'th-TH' : 'en-US';
-
-        // Use normal space between words for natural pacing
-        utterance.text = text;
-
-        utterance.onstart = () => {
-            const button = document.querySelector(`.word-button[data-word="${text}"]`);
-            if (button) button.classList.add('ring-4', 'ring-blue-300');
-        };
-        utterance.onend = () => {
-            document.querySelectorAll('.word-button').forEach(button => {
-                button.classList.remove('ring-4', 'ring-blue-300');
-            });
-        };
-        utterance.onerror = (event) => {
-            console.error('Speech error:', event);
-            showError('ไม่สามารถอ่านข้อความได้');
-            document.querySelectorAll('.word-button').forEach(button => {
-                button.classList.remove('ring-4', 'ring-blue-300');
-            });
-        };
-
-        window.speechSynthesis.speak(utterance);
+    try {
+        responsiveVoice.speak(text, voice, speechOptions);
     } catch (error) {
         console.error('Speech error:', error);
         showError('ไม่สามารถอ่านข้อความได้');
-        document.querySelectorAll('.word-button').forEach(button => {
-            button.classList.remove('ring-4', 'ring-blue-300');
-        });
+        removeSpeakingHighlight();
     }
+}
+
+function highlightSpeakingButton(text) {
+    document.querySelectorAll('.word-button').forEach(button => {
+        if (button.getAttribute('data-word') === text) {
+            button.classList.add('ring-4', 'ring-blue-300');
+        }
+    });
+}
+
+function removeSpeakingHighlight() {
+    document.querySelectorAll('.word-button').forEach(button => {
+        button.classList.remove('ring-4', 'ring-blue-300');
+    });
 }
 
 // Modal Functions
@@ -535,7 +491,7 @@ function initializeVoice() {
                     }
                     v = voices.find(v =>
                         v.lang === language &&
-                        !['Male', 'Men'].some(keyword => v.name.toLowerCase().includes(keyword))
+                        !['male', 'men'].some(keyword => v.name.toLowerCase().includes(keyword))
                     );
                     if (v) return v;
                     v = voices.find(v => v.lang === language);
