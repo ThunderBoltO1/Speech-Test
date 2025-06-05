@@ -275,21 +275,20 @@ function speakText(text) {
         if (responsiveVoice) {
             // Highlight the speaking button
             highlightSpeakingButton(text);
-            
+
             // Determine language and set appropriate voice
             const isThai = isThaiText(text);
             const voice = isThai ? 'Thai Male' : 'UK English Male';
-            
-            // Speak the text with appropriate voice
+
+            // ปรับ rate/pitch/volume ให้เหมือนกันทั้งสองภาษา
             responsiveVoice.speak(text, voice, {
                 onend: removeSpeakingHighlight,
                 onerror: (error) => {
                     console.error('Speech error:', error);
                     removeSpeakingHighlight();
                 },
-                // Adjust voice parameters for better quality
-                rate: isThai ? 0.9 : 1.0,
-                pitch: isThai ? 1.1 : 1.0,
+                rate: 1.0,
+                pitch: 1.0,
                 volume: 1.0
             });
         } else {
@@ -297,7 +296,6 @@ function speakText(text) {
             // Fallback to Web Speech API if available
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(text);
-                // Set language based on text
                 utterance.lang = isThaiText(text) ? 'th-TH' : 'en-US';
                 utterance.onend = removeSpeakingHighlight;
                 speechSynthesis.speak(utterance);
