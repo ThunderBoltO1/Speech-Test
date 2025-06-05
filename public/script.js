@@ -141,11 +141,15 @@ async function loadCategoryData() {
 
 function renderButtons(words = []) {
     if (elements.buttonContainer) {
+        elements.buttonContainer.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3 p-2 md:p-4';
         elements.buttonContainer.innerHTML = words.map(word => `
-            <button class="word-button flex-1 text-center 
+            <button class="word-button text-center 
                 bg-gradient-to-br from-blue-500 to-blue-600
                 hover:from-blue-600 hover:to-blue-700
-                text-white text-4xl px-6 py-10 rounded-xl m-2 
+                text-white text-2xl sm:text-3xl md:text-4xl 
+                px-4 sm:px-5 md:px-6 
+                py-6 sm:py-8 md:py-10 
+                rounded-xl m-1 sm:m-2 
                 transition-all duration-300 ease-in-out
                 transform hover:scale-105 hover:shadow-lg
                 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-300/50
@@ -156,7 +160,7 @@ function renderButtons(words = []) {
                 ${isSelectMode ? `<span class="selection-indicator ml-2 text-green-500 transform transition-all duration-300">${selectedWords.includes(word) ? '✔️' : ''}</span>` : ''}
             </button>
         `).join('');
-        
+
         // เพิ่ม event listeners หลังจากสร้าง DOM elements
         document.querySelectorAll('.word-button').forEach(button => {
             button.addEventListener('click', () => {
@@ -174,9 +178,51 @@ function renderButtons(words = []) {
 }
 
 // UI Functions
-// Update setCategory to not clear selectedWords when switching categories
+// Update setCategory to highlight current category
 function setCategory(category) {
     currentCategory = category;
+    
+    // Update category buttons UI
+    document.querySelectorAll('.category-button').forEach(button => {
+        const isSelected = button.dataset.category === category;
+        
+        // Remove all highlight classes first
+        button.classList.remove(
+            'bg-blue-100', 'bg-green-100', 'bg-purple-100',
+            'bg-blue-500', 'bg-green-500', 'bg-purple-500',
+            'text-blue-800', 'text-green-800', 'text-purple-800',
+            'text-white', 'scale-105', 'shadow-lg', 'font-bold'
+        );
+        
+        // Add appropriate classes based on category and selection state
+        if (isSelected) {
+            switch (category) {
+                case 'ทั่วไป':
+                    button.classList.add('bg-blue-500', 'text-white', 'scale-105', 'shadow-lg', 'font-bold');
+                    break;
+                case 'ความต้องการ':
+                    button.classList.add('bg-green-500', 'text-white', 'scale-105', 'shadow-lg', 'font-bold');
+                    break;
+                case 'คลัง':
+                    button.classList.add('bg-purple-500', 'text-white', 'scale-105', 'shadow-lg', 'font-bold');
+                    break;
+            }
+        } else {
+            // Default state colors
+            switch (button.dataset.category) {
+                case 'ทั่วไป':
+                    button.classList.add('bg-blue-100', 'text-blue-800', 'hover:bg-blue-200');
+                    break;
+                case 'ความต้องการ':
+                    button.classList.add('bg-green-100', 'text-green-800', 'hover:bg-green-200');
+                    break;
+                case 'คลัง':
+                    button.classList.add('bg-purple-100', 'text-purple-800', 'hover:bg-purple-200');
+                    break;
+            }
+        }
+    });
+    
     loadCategoryData();
 }
 
@@ -203,10 +249,20 @@ function toggleWordSelection(word) {
 
 function updateSelectionUI() {
     if (elements.selectedWordsContainer) {
+        elements.selectedWordsContainer.className = 'mt-2 sm:mt-3 md:mt-4 flex flex-wrap gap-1 sm:gap-2 p-2 sm:p-3';
         elements.selectedWordsContainer.innerHTML = selectedWords.map(word => `
-            <span class="selected-word bg-green-500 text-white text-xl px-4 py-2 rounded-full inline-flex items-center m-1">
+            <span class="selected-word 
+                bg-gradient-to-r from-green-500 to-green-400
+                text-white 
+                text-base sm:text-lg md:text-xl 
+                px-3 sm:px-4 
+                py-1.5 sm:py-2 
+                rounded-full 
+                inline-flex items-center 
+                m-0.5 sm:m-1
+                shadow-md hover:shadow-lg transition-shadow">
                 ${word}
-                <button class="ml-2 hover:text-gray-200" onclick="removeSelectedWord('${word}')">&times;</button>
+                <button class="ml-2 hover:text-gray-200 transition-colors" onclick="removeSelectedWord('${word}')">&times;</button>
             </span>
         `).join('');
     }
@@ -235,7 +291,15 @@ function removeSelectedWord(word) {
 
 function updateMixResult(text = '') {
     if (elements.mixResult) {
-        elements.mixResult.className = 'bg-gradient-to-br from-blue-700 to-blue-800 text-white text-xl md:text-2xl font-bold px-4 md:px-6 py-4 md:py-8 rounded-xl mx-2 shadow-lg w-full md:w-auto text-center transition-all duration-300 transform hover:shadow-xl';
+        elements.mixResult.className = `bg-gradient-to-br from-blue-700 to-blue-800 
+            text-white text-lg sm:text-xl md:text-2xl font-bold 
+            px-3 sm:px-4 md:px-6 
+            py-3 sm:py-4 md:py-8 
+            rounded-xl mx-2 shadow-lg 
+            w-full md:w-auto text-center 
+            transition-all duration-300 transform hover:shadow-xl
+            min-h-[60px] sm:min-h-[80px] md:min-h-[100px]
+            flex items-center justify-center`;
         elements.mixResult.textContent = text || selectedWords.join(' ') || 'ยังไม่ได้เลือกคำ';
     }
 }
@@ -873,16 +937,39 @@ styleElement.setAttribute('data-dragdrop-styles', '');
 styleElement.textContent = dragDropStyles;
 document.head.appendChild(styleElement);
 
-// UI สำหรับเลือกเครื่อง (Floating, modern style)
+// UI สำหรับเลือกเครื่อง (Floating, modern style, responsive)
 function renderDeviceSelector() {
-    if (document.getElementById('device-1-btn')) return; // ป้องกันซ้ำ
+    if (document.getElementById('device-1-btn')) return;
     const container = document.createElement('div');
     container.id = 'device-selector-floating';
-    container.className = `fixed top-4 right-4 z-50 flex gap-3 items-center p-3 bg-gradient-to-br from-blue-400 via-white to-green-300 rounded-2xl shadow-2xl border border-blue-200 backdrop-blur-md transition-all duration-300`;
+    container.className = `fixed top-2 sm:top-3 md:top-4 right-2 sm:right-3 md:right-4 
+        z-50 flex gap-2 sm:gap-3 items-center 
+        p-2 sm:p-3 
+        bg-gradient-to-br from-blue-400 via-white to-green-300 
+        rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl md:shadow-2xl 
+        border border-blue-200 backdrop-blur-md 
+        transition-all duration-300
+        scale-90 sm:scale-95 md:scale-100`;
     container.innerHTML = `
-        <span class="hidden md:inline text-base font-semibold text-gray-700 mr-2 drop-shadow">เลือกเครื่อง:</span>
-        <button id="device-1-btn" class="px-5 py-2 rounded-full transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 text-base md:text-lg shadow-md border-2 ${selectedDevice === 1 ? 'font-bold ring-2 ring-blue-400 bg-gradient-to-r from-blue-500 to-blue-400 text-white border-blue-500 scale-105' : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-100'}">เครื่อง 1</button>
-        <button id="device-2-btn" class="px-5 py-2 rounded-full transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-green-400 text-base md:text-lg shadow-md border-2 ${selectedDevice === 2 ? 'font-bold ring-2 ring-green-400 bg-gradient-to-r from-green-500 to-green-400 text-white border-green-500 scale-105' : 'bg-white text-green-700 border-green-300 hover:bg-green-100'}">เครื่อง 2</button>
+        <span class="hidden md:inline text-sm sm:text-base font-semibold text-gray-700 mr-2 drop-shadow">เลือกเครื่อง:</span>
+        <button id="device-1-btn" class="px-3 sm:px-4 md:px-5 
+            py-1.5 sm:py-2 
+            rounded-full transition-all duration-150 
+            focus:outline-none focus:ring-2 focus:ring-blue-400 
+            text-sm sm:text-base md:text-lg 
+            shadow-md border-2 
+            ${selectedDevice === 1 ? 'font-bold ring-2 ring-blue-400 bg-gradient-to-r from-blue-500 to-blue-400 text-white border-blue-500 scale-105' : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-100'}">
+            เครื่อง 1
+        </button>
+        <button id="device-2-btn" class="px-3 sm:px-4 md:px-5 
+            py-1.5 sm:py-2 
+            rounded-full transition-all duration-150 
+            focus:outline-none focus:ring-2 focus:ring-green-400 
+            text-sm sm:text-base md:text-lg 
+            shadow-md border-2 
+            ${selectedDevice === 2 ? 'font-bold ring-2 ring-green-400 bg-gradient-to-r from-green-500 to-green-400 text-white border-green-500 scale-105' : 'bg-white text-green-700 border-green-300 hover:bg-green-100'}">
+            เครื่อง 2
+        </button>
     `;
     document.body.appendChild(container);
 
@@ -900,8 +987,20 @@ function updateDeviceSelectorUI() {
     const btn1 = document.getElementById('device-1-btn');
     const btn2 = document.getElementById('device-2-btn');
     if (!btn1 || !btn2) return;
-    btn1.className = `px-5 py-2 rounded-full transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 text-base md:text-lg shadow-md border-2 ${selectedDevice === 1 ? 'font-bold ring-2 ring-blue-400 bg-gradient-to-r from-blue-500 to-blue-400 text-white border-blue-500 scale-105' : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-100'}`;
-    btn2.className = `px-5 py-2 rounded-full transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-green-400 text-base md:text-lg shadow-md border-2 ${selectedDevice === 2 ? 'font-bold ring-2 ring-green-400 bg-gradient-to-r from-green-500 to-green-400 text-white border-green-500 scale-105' : 'bg-white text-green-700 border-green-300 hover:bg-green-100'}`;
+    btn1.className = `px-3 sm:px-4 md:px-5 
+        py-1.5 sm:py-2 
+        rounded-full transition-all duration-150 
+        focus:outline-none focus:ring-2 focus:ring-blue-400 
+        text-sm sm:text-base md:text-lg 
+        shadow-md border-2 
+        ${selectedDevice === 1 ? 'font-bold ring-2 ring-blue-400 bg-gradient-to-r from-blue-500 to-blue-400 text-white border-blue-500 scale-105' : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-100'}`;
+    btn2.className = `px-3 sm:px-4 md:px-5 
+        py-1.5 sm:py-2 
+        rounded-full transition-all duration-150 
+        focus:outline-none focus:ring-2 focus:ring-green-400 
+        text-sm sm:text-base md:text-lg 
+        shadow-md border-2 
+        ${selectedDevice === 2 ? 'font-bold ring-2 ring-green-400 bg-gradient-to-r from-green-500 to-green-400 text-white border-green-500 scale-105' : 'bg-white text-green-700 border-green-300 hover:bg-green-100'}`;
 }
 
 // เรียก renderDeviceSelector เมื่อโหลดหน้า
