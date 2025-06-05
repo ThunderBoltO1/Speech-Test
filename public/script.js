@@ -849,16 +849,27 @@ styleElement.setAttribute('data-dragdrop-styles', '');
 styleElement.textContent = dragDropStyles;
 document.head.appendChild(styleElement);
 
-// UI สำหรับเลือกเครื่อง (เพิ่มใน DOM ตามต้องการ)
+// UI สำหรับเลือกเครื่อง (เพิ่มใน header)
 function renderDeviceSelector() {
     if (document.getElementById('device-1-btn')) return; // ป้องกันซ้ำ
     const container = document.createElement('div');
-    container.className = 'fixed top-4 right-4 z-50 flex gap-2 bg-white bg-opacity-80 rounded-lg shadow-lg px-4 py-2 border border-blue-200';
+    container.className = 'flex gap-2 bg-white bg-opacity-80 rounded-lg shadow-lg px-4 py-2 border border-blue-200';
     container.innerHTML = `
         <button id="device-1-btn" class="px-4 py-2 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 text-base md:text-lg ${selectedDevice === 1 ? 'font-bold ring-2 ring-blue-400 bg-blue-500 text-white shadow' : 'bg-white text-blue-700 border border-blue-300 hover:bg-blue-100'}">เครื่อง 1</button>
         <button id="device-2-btn" class="px-4 py-2 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-green-400 text-base md:text-lg ${selectedDevice === 2 ? 'font-bold ring-2 ring-green-400 bg-green-500 text-white shadow' : 'bg-white text-green-700 border border-green-300 hover:bg-green-100'}">เครื่อง 2</button>
     `;
-    document.body.appendChild(container);
+    // แทรกเข้าไปใน header (หลัง h1)
+    const header = document.querySelector('header');
+    if (header) {
+        const h1 = header.querySelector('h1');
+        if (h1 && h1.parentNode) {
+            h1.parentNode.insertBefore(container, h1.nextSibling);
+        } else {
+            header.appendChild(container);
+        }
+    } else {
+        document.body.appendChild(container);
+    }
 
     document.getElementById('device-1-btn').onclick = () => {
         selectedDevice = 1;
