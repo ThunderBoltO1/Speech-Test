@@ -105,6 +105,9 @@ function authenticate() {
 // Data Functions
 async function loadInitialData() {
     try {
+        // รีเซ็ต mixResult เมื่อโหลดหน้าใหม่
+        updateMixResult('');
+        selectedWords = [];
         await loadCategoryData();
     } catch (error) {
         showError('ไม่สามารถโหลดข้อมูลเริ่มต้นได้');
