@@ -278,7 +278,7 @@ function speakText(text) {
             
             // Determine language and set appropriate voice
             const isThai = isThaiText(text);
-            const voice = isThai ? 'Thai Female' : 'UK English Male';
+            const voice = isThai ? 'Thai Male' : 'UK English Male';
             
             // Speak the text with appropriate voice
             responsiveVoice.speak(text, voice, {
