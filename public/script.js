@@ -273,13 +273,57 @@ function initializeVoice() {
     }
 }
 
+// --- Firebase Realtime Database Setup ---
+// เพิ่ม <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script> และ
+// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script> ใน index.html ด้วย
+
+// กำหนดค่า Firebase (เปลี่ยนค่าตามโปรเจกต์ของคุณ)
+const firebaseConfig = {
+  apiKey: "AIzaSyB8r6w1u8jc5c38SZ79GgwOiWol2kKdcl4",
+  authDomain: "speech-ram.firebaseapp.com",
+  databaseURL: "https://speech-ram-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "speech-ram",
+  storageBucket: "speech-ram.firebasestorage.app",
+  messagingSenderId: "102365767024",
+  appId: "1:102365767024:web:37cbf37f56433238a3dbb5",
+  measurementId: "G-3G8KZ0GK1L"
+};
+
+// เริ่มต้น Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ฟังก์ชันส่งข้อความพูดไปยัง Firebase
+function sendSpeakMessage(text) {
+    // ใช้ timestamp เป็น key เพื่อป้องกันชนกัน
+    const msgRef = db.ref('speakMessages').push();
+    msgRef.set({
+        text,
+        timestamp: Date.now()
+    });
+}
+
+// ฟังก์ชันรับข้อความพูดจาก Firebase (เฉพาะเครื่อง 1)
+function listenSpeakMessages() {
+    let lastTimestamp = 0;
+    db.ref('speakMessages').on('child_added', (snapshot) => {
+        const data = snapshot.val();
+        if (selectedDevice === 1 && data && data.timestamp > lastTimestamp) {
+            lastTimestamp = data.timestamp;
+            speakText(data.text, true); // true = ข้ามการส่งซ้ำ
+        }
+    });
+}
+listenSpeakMessages();
+
+// --- ปรับ speakText ให้ใช้ Firebase แทน WebSocket ---
 function speakText(text, skipSend = false) {
     try {
-        if (selectedDevice === 2 && !skipSend && ws && ws.readyState === 1) {
-            // ถ้าเลือกเครื่อง 2 ให้ส่งข้อความไปอีกเครื่อง
-            ws.send(JSON.stringify({ type: 'speak', text }));
+        if (selectedDevice === 2 && !skipSend) {
+            // ถ้าเลือกเครื่อง 2 ให้ส่งข้อความไปอีกเครื่องผ่าน Firebase
+            sendSpeakMessage(text);
             highlightSpeakingButton(text);
-            setTimeout(removeSpeakingHighlight, 1500); // แสดง effect สั้นๆ
+            setTimeout(removeSpeakingHighlight, 1500);
             return;
         }
 
@@ -807,6 +851,7 @@ document.head.appendChild(styleElement);
 
 // UI สำหรับเลือกเครื่อง (เพิ่มใน DOM ตามต้องการ)
 function renderDeviceSelector() {
+    if (document.getElementById('device-1-btn')) return; // ป้องกันซ้ำ
     const container = document.createElement('div');
     container.className = 'fixed top-4 right-4 z-50 flex gap-2';
     container.innerHTML = `
@@ -841,25 +886,3 @@ document.addEventListener('DOMContentLoaded', () => {
     renderDeviceSelector();
     // ...existing code...
 });
-
-// เพิ่ม WebSocket สำหรับสื่อสารข้ามเครื่อง
-let ws;
-function setupWebSocket() {
-    // เปลี่ยน URL ให้ตรงกับ server ของคุณ (เช่น ws://your-server:port)
-    ws = new WebSocket('wss://your-websocket-server-url');
-    ws.onopen = () => console.log('WebSocket connected');
-    ws.onmessage = (event) => {
-        try {
-            const data = JSON.parse(event.data);
-            if (data.type === 'speak' && selectedDevice === 1) {
-                // ถ้าเครื่องนี้คือเครื่อง 1 ให้พูดข้อความที่รับมา
-                speakText(data.text, true); // true = ข้ามการส่งซ้ำ
-            }
-        } catch (e) {
-            console.error('WebSocket message error:', e);
-        }
-    };
-    ws.onerror = (e) => console.error('WebSocket error:', e);
-    ws.onclose = () => setTimeout(setupWebSocket, 3000); // auto reconnect
-}
-setupWebSocket();
