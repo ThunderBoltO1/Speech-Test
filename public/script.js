@@ -264,52 +264,24 @@ function initializeVoice() {
         if ('speechSynthesis' in window) {
             window._voiceSettings = {
                 defaultParams: {
-                    rate: 0.85,     // ปรับความเร็วให้เหมาะสม
-                    pitch: 0.7,     // ทุ้มแต่ไม่มากเกินไป
+                    rate: 0.9,
+                    pitch: 1.1,
                     volume: 1
                 }
             };
-
-            // คำค้นหาเสียงผู้ชายที่หลากหลายขึ้น
-            const MALE_VOICE_KEYWORDS = ['male', 'man', 'boy', 'deep', 'ชาย', 'ผู้ชาย'];
-
+            
+            // เตรียม voices
             speechSynthesis.onvoiceschanged = () => {
                 const voices = speechSynthesis.getVoices();
-                console.log('Available voices:', voices.map(v => `${v.name} (${v.lang})`));
-
-                const findBestMaleVoice = (language) => {
-                    // 1. หาเสียงที่เป็นภาษาและมีคำว่า male/man/boy/deep/ชาย/ผู้ชาย
-                    let v = voices.find(v =>
-                        v.lang === language &&
-                        MALE_VOICE_KEYWORDS.some(keyword => v.name.toLowerCase().includes(keyword))
-                    );
-                    if (v) return v;
-                    // 2. หาเสียงที่เป็นภาษาและไม่ใช่ female/woman/girl/หญิง/ผู้หญิง
-                    v = voices.find(v =>
-                        v.lang === language &&
-                        !['female', 'woman', 'girl', 'หญิง', 'ผู้หญิง'].some(keyword => v.name.toLowerCase().includes(keyword))
-                    );
-                    if (v) return v;
-                    // 3. หาเสียงที่เป็นภาษา
-                    v = voices.find(v => v.lang === language);
-                    if (v) return v;
-                    // 4. เสียงแรกที่เจอ
-                    return voices[0];
-                };
-
                 window._voiceSettings.voices = {
-                    thai: findBestMaleVoice('th-TH'),
-                    english: findBestMaleVoice('en-US')
+                    thai: voices.find(v => v.lang === 'th-TH') || voices[0],
+                    english: voices.find(v => v.lang === 'en-US') || voices[0]
                 };
-
-                // log เสียงที่เลือก
-                console.log('Selected voices:', {
-                    thai: window._voiceSettings.voices.thai?.name,
-                    english: window._voiceSettings.voices.english?.name
-                });
             };
-
+            
+            // เรียกครั้งแรกเผื่อ voices พร้อมแล้ว
             speechSynthesis.getVoices();
+            
             return true;
         }
         throw new Error('Browser does not support speech synthesis');
@@ -322,37 +294,33 @@ function initializeVoice() {
 function speakText(text) {
     if (!text) return;
 
+    // ยกเลิกเสียงที่กำลังพูดอยู่
     window.speechSynthesis.cancel();
+
+    // หาปุ่มที่เกี่ยวข้องกับคำที่จะพูด
+    const button = document.querySelector(`.word-button[data-word="${text}"]`);
+    
     const isThai = /[\u0E00-\u0E7F]/.test(text);
     updateMixResult(text);
 
     try {
         const utterance = new SpeechSynthesisUtterance(text);
-
-        // ปรับแต่งเสียง
-        Object.assign(utterance, {
-            ...window._voiceSettings?.defaultParams,
-            rate: isThai ? 0.85 : 0.95, // ไทยช้ากว่าอังกฤษเล็กน้อย
-            pitch: 0.7
-        });
-
-        // เลือกเสียง
+        
+        // ตั้งค่าพื้นฐาน
+        Object.assign(utterance, window._voiceSettings?.defaultParams || {});
+        
+        // เลือกเสียงตามภาษา
         if (window._voiceSettings?.voices) {
-            utterance.voice = isThai
-                ? window._voiceSettings.voices.thai
-                : window._voiceSettings.voices.english;
+            utterance.voice = isThai ? 
+                window._voiceSettings.voices.thai : 
+                window._voiceSettings.voices.english;
         }
-
+        
+        // ตั้งค่าภาษา
         utterance.lang = isThai ? 'th-TH' : 'en-US';
 
-        // เว้นระหว่างคำเร็วขึ้น (ใช้ comma เดียว)
-        utterance.text = text.replace(/\s+/g, ','); // ไม่มี space หลัง comma
-
         // Events
-        utterance.onstart = () => {
-            const button = document.querySelector(`.word-button[data-word="${text}"]`);
-            updateSpeakingState(true, text, button);
-        };
+        utterance.onstart = () => updateSpeakingState(true, text, button);
         utterance.onend = () => updateSpeakingState(false);
         utterance.onerror = (event) => {
             console.error('Speech error:', event);
@@ -514,53 +482,24 @@ function initializeVoice() {
         if ('speechSynthesis' in window) {
             window._voiceSettings = {
                 defaultParams: {
-                    rate: 0.85,     // ปรับความเร็วให้เหมาะสม
-                    pitch: 0.7,     // ทุ้มแต่ไม่มากเกินไป
+                    rate: 0.9,
+                    pitch: 1.1,
                     volume: 1
                 }
             };
-
-            // คำค้นหาเสียงผู้ชายที่หลากหลายขึ้น
-            const MALE_VOICE_KEYWORDS = ['male', 'man', 'boy', 'deep', 'ชาย', 'ผู้ชาย'];
-
+            
+            // เตรียม voices
             speechSynthesis.onvoiceschanged = () => {
                 const voices = speechSynthesis.getVoices();
-                console.log('Available voices:', voices.map(v => `${v.name} (${v.lang})`));
-
-                const findBestMaleVoice = (language) => {
-                    // 1. หาเสียงที่เป็นภาษาและมีคำว่า male/man/boy/deep/ชาย/ผู้ชาย
-                    let v = voices.find(v =>
-                        v.lang === language &&
-                        MALE_VOICE_KEYWORDS.some(keyword => v.name.toLowerCase().includes(keyword))
-                    );
-                    if (v) return v;
-                    // 2. หาเสียงที่เป็นภาษาและไม่ใช่ female/woman/girl/หญิง/ผู้หญิง
-                    v = voices.find(v =>
-                        v.lang === language &&
-                        !['female', 'woman', 'girl', 'หญิง', 'ผู้หญิง'].some(keyword => v.name.toLowerCase().includes(keyword))
-                    );
-                    if (v) return v;
-                    // 3. หาเสียงที่เป็นภาษา
-                    v = voices.find(v => v.lang === language);
-                    if (v) return v;
-                    // 4. เสียงแรกที่เจอ
-                    return voices[0];
-                };
-
                 window._voiceSettings.voices = {
-                    thai: findBestMaleVoice('th-TH'),
-                    english: findBestMaleVoice('en-US')
+                    thai: voices.find(v => v.lang === 'th-TH') || voices[0],
+                    english: voices.find(v => v.lang === 'en-US') || voices[0]
                 };
-
-                // แสดงรายละเอียดเสียงที่เลือก
-                console.log('Selected voices:', {
-                    thai: window._voiceSettings.voices.thai?.name,
-                    english: window._voiceSettings.voices.english?.name
-                });
             };
-
-            // เรียกครั้งแรก
+            
+            // เรียกครั้งแรกเผื่อ voices พร้อมแล้ว
             speechSynthesis.getVoices();
+            
             return true;
         }
         throw new Error('Browser does not support speech synthesis');
