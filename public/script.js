@@ -16,6 +16,9 @@ let currentCategory = 'ทั่วไป';
 let selectedWords = [];
 let isSelectMode = false;
 
+// เพิ่มตัวแปรสำหรับเลือกเครื่อง
+let selectedDevice = 1; // 1 = เครื่องนี้, 2 = อีกเครื่อง
+
 // DOM Elements
 const elements = {
     modal: document.getElementById('modal'),
@@ -270,17 +273,20 @@ function initializeVoice() {
     }
 }
 
-function speakText(text) {
+function speakText(text, skipSend = false) {
     try {
-        if (responsiveVoice) {
-            // Highlight the speaking button
+        if (selectedDevice === 2 && !skipSend && ws && ws.readyState === 1) {
+            // ถ้าเลือกเครื่อง 2 ให้ส่งข้อความไปอีกเครื่อง
+            ws.send(JSON.stringify({ type: 'speak', text }));
             highlightSpeakingButton(text);
+            setTimeout(removeSpeakingHighlight, 1500); // แสดง effect สั้นๆ
+            return;
+        }
 
-            // Determine language and set appropriate voice
+        if (responsiveVoice) {
+            highlightSpeakingButton(text);
             const isThai = isThaiText(text);
             const voice = isThai ? 'Thai Male' : 'UK English Male';
-
-            // ปรับ rate/pitch/volume ให้เหมือนกันทั้งสองภาษา
             responsiveVoice.speak(text, voice, {
                 onend: removeSpeakingHighlight,
                 onerror: (error) => {
@@ -293,7 +299,6 @@ function speakText(text) {
             });
         } else {
             console.warn('ResponsiveVoice not available');
-            // Fallback to Web Speech API if available
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = isThaiText(text) ? 'th-TH' : 'en-US';
@@ -799,3 +804,62 @@ const styleElement = document.createElement('style');
 styleElement.setAttribute('data-dragdrop-styles', '');
 styleElement.textContent = dragDropStyles;
 document.head.appendChild(styleElement);
+
+// UI สำหรับเลือกเครื่อง (เพิ่มใน DOM ตามต้องการ)
+function renderDeviceSelector() {
+    const container = document.createElement('div');
+    container.className = 'fixed top-4 right-4 z-50 flex gap-2';
+    container.innerHTML = `
+        <button id="device-1-btn" class="px-4 py-2 rounded bg-blue-500 text-white ${selectedDevice === 1 ? 'font-bold ring-2 ring-blue-300' : ''}">เครื่อง 1</button>
+        <button id="device-2-btn" class="px-4 py-2 rounded bg-green-500 text-white ${selectedDevice === 2 ? 'font-bold ring-2 ring-green-300' : ''}">เครื่อง 2</button>
+    `;
+    document.body.appendChild(container);
+
+    document.getElementById('device-1-btn').onclick = () => {
+        selectedDevice = 1;
+        updateDeviceSelectorUI();
+    };
+    document.getElementById('device-2-btn').onclick = () => {
+        selectedDevice = 2;
+        updateDeviceSelectorUI();
+    };
+}
+
+function updateDeviceSelectorUI() {
+    document.getElementById('device-1-btn').classList.toggle('font-bold', selectedDevice === 1);
+    document.getElementById('device-1-btn').classList.toggle('ring-2', selectedDevice === 1);
+    document.getElementById('device-1-btn').classList.toggle('ring-blue-300', selectedDevice === 1);
+
+    document.getElementById('device-2-btn').classList.toggle('font-bold', selectedDevice === 2);
+    document.getElementById('device-2-btn').classList.toggle('ring-2', selectedDevice === 2);
+    document.getElementById('device-2-btn').classList.toggle('ring-green-300', selectedDevice === 2);
+}
+
+// เรียก renderDeviceSelector เมื่อโหลดหน้า
+document.addEventListener('DOMContentLoaded', () => {
+    // ...existing code...
+    renderDeviceSelector();
+    // ...existing code...
+});
+
+// เพิ่ม WebSocket สำหรับสื่อสารข้ามเครื่อง
+let ws;
+function setupWebSocket() {
+    // เปลี่ยน URL ให้ตรงกับ server ของคุณ (เช่น ws://your-server:port)
+    ws = new WebSocket('wss://your-websocket-server-url');
+    ws.onopen = () => console.log('WebSocket connected');
+    ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'speak' && selectedDevice === 1) {
+                // ถ้าเครื่องนี้คือเครื่อง 1 ให้พูดข้อความที่รับมา
+                speakText(data.text, true); // true = ข้ามการส่งซ้ำ
+            }
+        } catch (e) {
+            console.error('WebSocket message error:', e);
+        }
+    };
+    ws.onerror = (e) => console.error('WebSocket error:', e);
+    ws.onclose = () => setTimeout(setupWebSocket, 3000); // auto reconnect
+}
+setupWebSocket();
