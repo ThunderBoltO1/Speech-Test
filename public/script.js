@@ -11,7 +11,7 @@ const CATEGORY_SHEETS = {
 
 // State
 let accessToken = null;
-let tokenExpiry = null;
+let tokenExpiry = null; 
 let currentCategory = 'ทั่วไป';
 let selectedWords = [];
 let isSelectMode = false;
