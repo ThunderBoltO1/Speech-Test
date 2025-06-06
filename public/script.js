@@ -960,7 +960,7 @@ function renderDeviceSelector() {
         transition-all duration-300
         scale-90 sm:scale-95 md:scale-100`;
     container.innerHTML = `
-        <span class="hidden md:inline text-sm sm:text-base font-semibold text-gray-700 mr-2 drop-shadow">เลือกเครื่อง:</span>
+        <span class="hidden md:inline text-sm sm:text-base font-semibold text-gray-700 mr-2 drop-shadow">เลือกเครื่องสนทนา:</span>
         <button id="device-1-btn" class="px-3 sm:px-4 md:px-5 
             py-1.5 sm:py-2 
             rounded-full transition-all duration-150 
@@ -968,7 +968,7 @@ function renderDeviceSelector() {
             text-sm sm:text-base md:text-lg 
             shadow-md border-2 
             ${selectedDevice === 1 ? 'font-bold ring-2 ring-blue-400 bg-gradient-to-r from-blue-500 to-blue-400 text-white border-blue-500 scale-105' : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-100'}">
-            เครื่อง 1
+            เครื่องผู้พูด
         </button>
         <button id="device-2-btn" class="px-3 sm:px-4 md:px-5 
             py-1.5 sm:py-2 
@@ -977,7 +977,7 @@ function renderDeviceSelector() {
             text-sm sm:text-base md:text-lg 
             shadow-md border-2 
             ${selectedDevice === 2 ? 'font-bold ring-2 ring-green-400 bg-gradient-to-r from-green-500 to-green-400 text-white border-green-500 scale-105' : 'bg-white text-green-700 border-green-300 hover:bg-green-100'}">
-            เครื่อง 2
+            คู่สนทนา
         </button>
     `;
     document.body.appendChild(container);
